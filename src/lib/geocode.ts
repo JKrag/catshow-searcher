@@ -11,12 +11,13 @@ const UA =
   process.env.CATZ_USER_AGENT ??
   "catz/0.1 (https://github.com/zak/catz; cat-show finder)";
 
-let lastCallAt = 0;
+let nextCallAt = 0;
 async function rateLimit() {
   const now = Date.now();
-  const wait = Math.max(0, 1100 - (now - lastCallAt));
-  if (wait) await new Promise((r) => setTimeout(r, wait));
-  lastCallAt = Date.now();
+  const slot = Math.max(now, nextCallAt);
+  nextCallAt = slot + 1100;
+  const wait = slot - now;
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
 }
 
 export async function geocode(

@@ -52,10 +52,12 @@ async function runOne(
   }
 }
 
-export async function runAllScrapers(geocodeBudget = 25): Promise<ScrapeOutcome[]> {
-  const results = await Promise.all([
-    runOne("FIFe", fetchFife, geocodeBudget),
-    runOne("TICA", fetchTica, geocodeBudget),
-  ]);
-  return results;
+export async function runAllScrapers(
+  geocodeBudget = 80,
+): Promise<ScrapeOutcome[]> {
+  // Sequential — Nominatim is 1 req/sec; running both in parallel splits the
+  // rate-limit budget unevenly and triggers 429s.
+  const fife = await runOne("FIFe", fetchFife, geocodeBudget);
+  const tica = await runOne("TICA", fetchTica, geocodeBudget);
+  return [fife, tica];
 }
