@@ -70,27 +70,37 @@ export function ShowCalendar({ shows }: Props) {
   });
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
+    <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm p-4">
+      <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => setAnchor(addMonths(anchor, -1))}
-          className="rounded border border-zinc-300 dark:border-zinc-700 px-3 py-1 text-sm"
+          className="rounded-lg ring-1 ring-zinc-200 dark:ring-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 px-3 py-1.5 text-sm transition"
+          aria-label="Previous month"
         >
           ←
         </button>
-        <h2 className="text-lg font-semibold">{monthLabel}</h2>
-        <button
-          onClick={() => setAnchor(addMonths(anchor, 1))}
-          className="rounded border border-zinc-300 dark:border-zinc-700 px-3 py-1 text-sm"
-        >
-          →
-        </button>
+        <h2 className="text-lg font-semibold tracking-tight">{monthLabel}</h2>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setAnchor(startOfMonth(new Date()))}
+            className="rounded-lg ring-1 ring-zinc-200 dark:ring-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 px-3 py-1.5 text-xs transition"
+          >
+            Today
+          </button>
+          <button
+            onClick={() => setAnchor(addMonths(anchor, 1))}
+            className="rounded-lg ring-1 ring-zinc-200 dark:ring-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 px-3 py-1.5 text-sm transition"
+            aria-label="Next month"
+          >
+            →
+          </button>
+        </div>
       </div>
-      <div className="grid grid-cols-7 gap-px bg-zinc-200 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800">
+      <div className="grid grid-cols-7 gap-px bg-zinc-200 dark:bg-zinc-800 ring-1 ring-zinc-200 dark:ring-zinc-800 rounded-xl overflow-hidden">
         {WEEKDAYS.map((d) => (
           <div
             key={d}
-            className="bg-zinc-50 dark:bg-zinc-900 text-xs font-semibold text-zinc-500 px-2 py-1"
+            className="bg-zinc-50 dark:bg-zinc-950 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 px-2 py-1.5 text-center"
           >
             {d}
           </div>
@@ -98,15 +108,22 @@ export function ShowCalendar({ shows }: Props) {
         {days.map((d) => {
           const key = ymd(d);
           const inMonth = d.getMonth() === anchor.getMonth();
+          const isToday = key === ymd(new Date());
           const dayShows = showsByDay.get(key) ?? [];
           return (
             <div
               key={key}
-              className={`bg-white dark:bg-zinc-950 min-h-24 p-1 ${
-                inMonth ? "" : "opacity-40"
+              className={`bg-white dark:bg-zinc-950 min-h-[7rem] p-1.5 transition ${
+                inMonth ? "" : "bg-zinc-50/60 dark:bg-zinc-950/60 opacity-60"
               }`}
             >
-              <div className="text-xs text-zinc-500">{d.getDate()}</div>
+              <div
+                className={`text-xs font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${
+                  isToday ? "bg-indigo-600 text-white" : "text-zinc-500"
+                }`}
+              >
+                {d.getDate()}
+              </div>
               <div className="space-y-0.5 mt-1">
                 {dayShows.slice(0, 3).map((s) => (
                   <a
@@ -114,12 +131,14 @@ export function ShowCalendar({ shows }: Props) {
                     href={s.url ?? "#"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block truncate text-[11px] leading-tight px-1 rounded hover:underline"
+                    className="block truncate text-[11px] leading-tight px-1.5 py-0.5 rounded hover:opacity-80 transition border-l-2"
                     title={`${s.title} — ${s.city ?? ""}, ${s.country ?? ""}`}
                     style={{
                       backgroundColor:
                         s.source === "FIFe" ? "#dbeafe" : "#ffe4e6",
                       color: s.source === "FIFe" ? "#1e3a8a" : "#881337",
+                      borderLeftColor:
+                        s.source === "FIFe" ? "#2563eb" : "#e11d48",
                     }}
                   >
                     {s.title}

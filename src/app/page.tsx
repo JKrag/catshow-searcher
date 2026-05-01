@@ -44,6 +44,12 @@ export default function HomePage() {
   const [routes, setRoutes] = useState<Record<number, { distance_km: number; duration_min: number }>>({});
   const [home] = useHome();
 
+  // TODO(prefill-country): when home is set on first load and the user has
+  // no countries selected, prefill `filters.countries` from
+  // `homeCountryAliases(home.display_name)` (see src/components/home.ts).
+  // Use the `ready` flag from useHome() to wait for localStorage hydration.
+  // Don't override an explicit user choice. See README "Country prefill UX".
+
   // Fetch shows whenever server-side filters change
   useEffect(() => {
     const controller = new AbortController();
@@ -71,7 +77,7 @@ export default function HomePage() {
     const dests = data.shows
       .filter((s) => s.lat != null && s.lng != null)
       .filter((s) => routes[s.id] === undefined)
-      .slice(0, 30) // cap requests per pass — hits OSRM gently
+      .slice(0, 100) // soft cap per pass; OSRM demo is forgiving but be polite
       .map((s) => ({ id: s.id, lat: s.lat!, lng: s.lng! }));
     if (dests.length === 0) return;
     const controller = new AbortController();
@@ -141,17 +147,26 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b border-zinc-200 dark:border-zinc-800 px-4 py-3 flex flex-wrap items-center gap-4 justify-between">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">🐈 catz</h1>
-          <p className="text-xs text-zinc-500">
-            FIFe + TICA cat shows in one place
-          </p>
+      <header className="sticky top-0 z-30 backdrop-blur-md bg-white/70 dark:bg-zinc-950/70 border-b border-zinc-200/70 dark:border-zinc-800/70">
+        <div className="max-w-[1400px] mx-auto px-4 py-3 flex flex-wrap items-center gap-4 justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-rose-500 flex items-center justify-center text-lg shadow-sm">
+              🐈
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold tracking-tight leading-none">
+                catz
+              </h1>
+              <p className="text-[11px] text-zinc-500 mt-0.5">
+                FIFe + TICA cat shows in one place
+              </p>
+            </div>
+          </div>
+          <HomeAddressInput />
         </div>
-        <HomeAddressInput />
       </header>
 
-      <main className="flex-1 flex flex-col lg:flex-row gap-6 p-4 max-w-[1400px] w-full mx-auto">
+      <main className="flex-1 flex flex-col lg:flex-row gap-6 p-4 lg:p-6 max-w-[1400px] w-full mx-auto">
         <FilterSidebar
           filters={filters}
           onChange={setFilters}
@@ -160,26 +175,51 @@ export default function HomePage() {
         />
 
         <section className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 p-1">
-              {(["list", "calendar", "map"] as View[]).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setView(v)}
-                  className={`px-3 py-1 text-sm rounded-md capitalize ${
-                    view === v
-                      ? "bg-white dark:bg-zinc-700 shadow"
-                      : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
-                  }`}
-                >
-                  {v}
-                </button>
-              ))}
+          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+            <div
+              role="tablist"
+              aria-label="View mode"
+              className="inline-flex gap-1 rounded-xl bg-zinc-100/80 dark:bg-zinc-900/80 p-1 ring-1 ring-zinc-200 dark:ring-zinc-800"
+            >
+              {(["list", "calendar", "map"] as View[]).map((v) => {
+                const icon = v === "list" ? "☰" : v === "calendar" ? "▦" : "◉";
+                return (
+                  <button
+                    key={v}
+                    role="tab"
+                    aria-selected={view === v}
+                    onClick={() => setView(v)}
+                    className={`px-3 py-1.5 text-sm rounded-lg capitalize font-medium transition-all flex items-center gap-1.5 ${
+                      view === v
+                        ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-zinc-200 dark:ring-zinc-600"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                    }`}
+                  >
+                    <span aria-hidden className="text-xs opacity-70">
+                      {icon}
+                    </span>
+                    {v}
+                  </button>
+                );
+              })}
             </div>
-            <div className="text-xs text-zinc-500">
-              {loading
-                ? "Loading…"
-                : `${visible.length} show${visible.length === 1 ? "" : "s"}`}
+            <div
+              className="text-xs text-zinc-500 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-100/80 dark:bg-zinc-900/80 ring-1 ring-zinc-200 dark:ring-zinc-800"
+              aria-live="polite"
+            >
+              {loading ? (
+                <>
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                  Loading…
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold text-zinc-700 dark:text-zinc-200">
+                    {visible.length}
+                  </span>{" "}
+                  show{visible.length === 1 ? "" : "s"}
+                </>
+              )}
             </div>
           </div>
 
@@ -189,16 +229,35 @@ export default function HomePage() {
             <ShowMap
               shows={sorted}
               home={home ? { lat: home.lat, lng: home.lng } : null}
+              maxDistanceKm={filters.maxDistanceKm}
             />
           )}
         </section>
       </main>
 
-      <footer className="border-t border-zinc-200 dark:border-zinc-800 px-4 py-2 text-xs text-zinc-500 text-center">
-        Data: <a className="underline" href="https://fifeweb.org" target="_blank" rel="noopener noreferrer">FIFe</a> ·{" "}
-        <a className="underline" href="https://shows.tica.org" target="_blank" rel="noopener noreferrer">TICA</a> ·
-        Map © OpenStreetMap · Routing via OSRM ·{" "}
-        <a href="/admin" className="underline">admin</a>
+      <footer className="border-t border-zinc-200 dark:border-zinc-800 px-4 py-3 text-xs text-zinc-500 text-center">
+        Data:{" "}
+        <a
+          className="underline-offset-2 hover:underline hover:text-blue-600"
+          href="https://fifeweb.org"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          FIFe
+        </a>{" "}
+        ·{" "}
+        <a
+          className="underline-offset-2 hover:underline hover:text-rose-600"
+          href="https://shows.tica.org"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          TICA
+        </a>{" "}
+        · Map © OpenStreetMap · Routing via OSRM ·{" "}
+        <a href="/admin" className="underline-offset-2 hover:underline">
+          admin
+        </a>
       </footer>
     </div>
   );
