@@ -1,7 +1,28 @@
 import { NextResponse } from "next/server";
+import fs from "node:fs";
+import path from "node:path";
 import { readStore, isStale, LOCAL_PATH } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
+
+function localGitInfo(): { sha: string; branch: string } {
+  try {
+    const gitDir = path.join(process.cwd(), ".git");
+    const head = fs.readFileSync(path.join(gitDir, "HEAD"), "utf8").trim();
+    if (head.startsWith("ref: ")) {
+      const ref = head.slice(5);
+      const branch = ref.replace("refs/heads/", "");
+      const shaPath = path.join(gitDir, ref);
+      const sha = fs.existsSync(shaPath)
+        ? fs.readFileSync(shaPath, "utf8").trim().slice(0, 12)
+        : "unknown";
+      return { sha, branch };
+    }
+    return { sha: head.slice(0, 12), branch: "detached" };
+  } catch {
+    return { sha: "unknown", branch: "unknown" };
+  }
+}
 
 export async function GET() {
   const blobEnvKeys = Object.keys(process.env).filter((k) =>
@@ -12,6 +33,11 @@ export async function GET() {
   );
   const onVercel = !!process.env.VERCEL;
 
+  const commitSha = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12)
+    ?? localGitInfo().sha;
+  const gitBranch = process.env.VERCEL_GIT_COMMIT_REF
+    ?? localGitInfo().branch;
+
   let store = null;
   let readError: string | null = null;
   try {
@@ -21,6 +47,8 @@ export async function GET() {
   }
 
   return NextResponse.json({
+    commit_sha: commitSha,
+    git_branch: gitBranch,
     blob_configured: blobConfigured,
     blob_env_keys: blobEnvKeys,
     on_vercel: onVercel,
