@@ -38,10 +38,10 @@ export function HomeAddressInput() {
   return (
     <div className="flex flex-col gap-1">
       {home ? (
-        <div className="flex items-center gap-2 text-sm rounded-full bg-green-50 dark:bg-green-950/40 ring-1 ring-green-200 dark:ring-green-900 pl-3 pr-1.5 py-1">
+        <div className="flex items-center gap-2 text-sm rounded-full bg-[var(--accent)]/15 ring-1 ring-[var(--accent)]/40 pl-3 pr-1.5 py-1">
           <span aria-hidden>🏠</span>
           <span
-            className="truncate max-w-xs text-green-900 dark:text-green-100"
+            className="truncate max-w-xs text-foreground"
             title={home.display_name}
           >
             {home.display_name}
@@ -49,7 +49,7 @@ export function HomeAddressInput() {
           <button
             type="button"
             onClick={() => setHome(null)}
-            className="text-[11px] text-green-800 dark:text-green-200 hover:bg-green-100 dark:hover:bg-green-900/60 rounded-full px-2 py-0.5 transition"
+            className="text-[11px] text-foreground/80 hover:bg-[var(--accent)]/25 rounded-full px-2 py-0.5 transition"
           >
             change
           </button>
@@ -60,18 +60,18 @@ export function HomeAddressInput() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Home address or postcode"
-            className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-3 py-1.5 text-sm w-64 outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition"
+            className="rounded-lg border border-border bg-[var(--surface)] px-3 py-1.5 text-sm w-64 outline-none focus:ring-2 focus:ring-[var(--accent)]/40 focus:border-[var(--accent)] transition"
           />
           <button
             type="submit"
             disabled={busy}
-            className="rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 px-4 py-1.5 text-sm font-medium disabled:opacity-50 hover:opacity-90 active:scale-[0.98] transition"
+            className="rounded-lg bg-[var(--primary)] text-[var(--primary-fg)] px-4 py-1.5 text-sm font-medium disabled:opacity-50 hover:opacity-90 active:scale-[0.98] transition"
           >
             {busy ? "…" : "Set"}
           </button>
         </form>
       )}
-      {err && <div className="text-rose-600 text-xs">{err}</div>}
+      {err && <div className="text-[var(--tica)] text-xs">{err}</div>}
     </div>
   );
 }

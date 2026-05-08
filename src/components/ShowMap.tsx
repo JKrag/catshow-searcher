@@ -111,7 +111,7 @@ export function ShowMap({ shows, home, maxDistanceKm }: Props) {
       if (home && s.distance_km != null) {
         const label = document.createElement("div");
         label.textContent = `${Math.round(s.distance_km)} km`;
-        label.style.fontFamily = "var(--font-geist-sans), sans-serif";
+        label.style.fontFamily = "var(--font-body), sans-serif";
         label.style.fontSize = "10px";
         label.style.fontWeight = "600";
         label.style.lineHeight = "1";
@@ -128,7 +128,7 @@ export function ShowMap({ shows, home, maxDistanceKm }: Props) {
 
       const distLine =
         home && s.distance_km != null
-          ? `<div style="display:flex;align-items:center;gap:6px;margin-top:4px;color:#16a34a;font-weight:600">
+          ? `<div style="display:flex;align-items:center;gap:6px;margin-top:4px;color:#9a3412;font-weight:600">
               <span aria-hidden>🚗</span>
               <span class="tabular-nums">${Math.round(s.distance_km)} km${
                 s.duration_min != null
@@ -138,15 +138,15 @@ export function ShowMap({ shows, home, maxDistanceKm }: Props) {
             </div>`
           : "";
       const popup = new maplibregl.Popup({ offset: 12 }).setHTML(
-        `<div style="font-family:sans-serif;font-size:12px;max-width:240px">
+        `<div style="font-family:inherit;font-size:12px;max-width:240px">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
             <span style="display:inline-block;background:${orgMarkerColor(s.source)};color:white;font-weight:600;padding:1px 6px;border-radius:9999px;font-size:10px">${s.source}</span>
             <strong>${escapeHtml(s.title)}</strong>
           </div>
           <div>${escapeHtml(s.start_date)} → ${escapeHtml(s.end_date)}</div>
-          <div style="color:#666">${escapeHtml([s.city, s.country].filter(Boolean).join(", "))}</div>
+          <div style="opacity:0.65">${escapeHtml([s.city, s.country].filter(Boolean).join(", "))}</div>
           ${distLine}
-          ${s.url ? `<div style="margin-top:4px"><a href="${s.url}" target="_blank" rel="noopener">Details ↗</a></div>` : ""}
+          ${s.url ? `<div style="margin-top:4px"><a href="${s.url}" target="_blank" rel="noopener" style="color:#7c3aed">Details ↗</a></div>` : ""}
         </div>`,
       );
       const marker = new maplibregl.Marker({ element: wrap, anchor: "left" })
@@ -167,7 +167,7 @@ export function ShowMap({ shows, home, maxDistanceKm }: Props) {
       el.style.justifyContent = "center";
       el.style.fontSize = "16px";
       el.style.borderRadius = "9999px";
-      el.style.background = "#16a34a";
+      el.style.background = "#d97706";
       el.style.color = "white";
       el.style.border = "3px solid white";
       el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.35)";
@@ -215,7 +215,7 @@ export function ShowMap({ shows, home, maxDistanceKm }: Props) {
           type: "fill",
           source: RADIUS_SOURCE_ID,
           paint: {
-            "fill-color": "#16a34a",
+            "fill-color": "#d97706",
             "fill-opacity": 0.08,
           },
         });
@@ -224,7 +224,7 @@ export function ShowMap({ shows, home, maxDistanceKm }: Props) {
           type: "line",
           source: RADIUS_SOURCE_ID,
           paint: {
-            "line-color": "#16a34a",
+            "line-color": "#d97706",
             "line-width": 2,
             "line-dasharray": [2, 2],
             "line-opacity": 0.8,
@@ -244,11 +244,11 @@ export function ShowMap({ shows, home, maxDistanceKm }: Props) {
     <div className="space-y-2">
       <div
         ref={containerRef}
-        className="w-full h-[600px] rounded-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm overflow-hidden"
+        className="w-full h-[600px] rounded-2xl ring-1 ring-border shadow-sm overflow-hidden"
       />
-      <div className="flex items-center justify-between text-xs text-zinc-500 px-1 flex-wrap gap-2">
+      <div className="flex items-center justify-between text-xs text-muted-foreground px-1 flex-wrap gap-2">
         <span>
-          <span className="font-semibold text-zinc-700 dark:text-zinc-200 tabular-nums">
+          <span className="font-semibold text-foreground tabular-nums">
             {geo.length}
           </span>{" "}
           of <span className="tabular-nums">{shows.length}</span> shows have a
@@ -257,7 +257,7 @@ export function ShowMap({ shows, home, maxDistanceKm }: Props) {
             <>
               {" "}
               · radius{" "}
-              <span className="font-semibold text-zinc-700 dark:text-zinc-200 tabular-nums">
+              <span className="font-semibold text-foreground tabular-nums">
                 {maxDistanceKm} km
               </span>
             </>
@@ -265,16 +265,16 @@ export function ShowMap({ shows, home, maxDistanceKm }: Props) {
         </span>
         <span className="flex items-center gap-3">
           <span className="flex items-center gap-1.5">
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-blue-600 ring-2 ring-white" />
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-[var(--fife)] ring-2 ring-white" />
             FIFe
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-rose-600 ring-2 ring-white" />
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-[var(--tica)] ring-2 ring-white" />
             TICA
           </span>
           {home && (
             <span className="flex items-center gap-1.5">
-              <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-600 ring-2 ring-white" />
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-[var(--accent)] ring-2 ring-white" />
               Home
             </span>
           )}

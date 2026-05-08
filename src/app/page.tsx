@@ -147,17 +147,17 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-30 backdrop-blur-md bg-white/70 dark:bg-zinc-950/70 border-b border-zinc-200/70 dark:border-zinc-800/70">
+      <header className="sticky top-0 z-30 backdrop-blur-md bg-[var(--background)]/75 border-b border-border/70">
         <div className="max-w-[1400px] mx-auto px-4 py-3 flex flex-wrap items-center gap-4 justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-rose-500 flex items-center justify-center text-lg shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--primary)] via-[var(--secondary)] to-[var(--accent)] flex items-center justify-center text-lg shadow-sm ring-1 ring-black/5">
               🐈
             </div>
             <div>
-              <h1 className="text-lg font-semibold tracking-tight leading-none">
+              <h1 className="font-serif text-2xl font-semibold tracking-tight leading-none text-foreground">
                 catz
               </h1>
-              <p className="text-[11px] text-zinc-500 mt-0.5">
+              <p className="text-[11px] text-muted-foreground mt-1">
                 FIFe + TICA cat shows in one place
               </p>
             </div>
@@ -179,7 +179,7 @@ export default function HomePage() {
             <div
               role="tablist"
               aria-label="View mode"
-              className="inline-flex gap-1 rounded-xl bg-zinc-100/80 dark:bg-zinc-900/80 p-1 ring-1 ring-zinc-200 dark:ring-zinc-800"
+              className="inline-flex gap-1 rounded-xl bg-[var(--muted-soft)] p-1 ring-1 ring-border"
             >
               {(["list", "calendar", "map"] as View[]).map((v) => {
                 const icon = v === "list" ? "☰" : v === "calendar" ? "▦" : "◉";
@@ -191,8 +191,8 @@ export default function HomePage() {
                     onClick={() => setView(v)}
                     className={`px-3 py-1.5 text-sm rounded-lg capitalize font-medium transition-all flex items-center gap-1.5 ${
                       view === v
-                        ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm ring-1 ring-zinc-200 dark:ring-zinc-600"
-                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                        ? "bg-[var(--surface)] text-foreground shadow-sm ring-1 ring-border"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     <span aria-hidden className="text-xs opacity-70">
@@ -204,17 +204,17 @@ export default function HomePage() {
               })}
             </div>
             <div
-              className="text-xs text-zinc-500 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-100/80 dark:bg-zinc-900/80 ring-1 ring-zinc-200 dark:ring-zinc-800"
+              className="text-xs text-muted-foreground inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--muted-soft)] ring-1 ring-border"
               aria-live="polite"
             >
               {loading ? (
                 <>
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse" />
                   Loading…
                 </>
               ) : (
                 <>
-                  <span className="font-semibold text-zinc-700 dark:text-zinc-200">
+                  <span className="font-semibold text-foreground">
                     {visible.length}
                   </span>{" "}
                   show{visible.length === 1 ? "" : "s"}
@@ -235,10 +235,10 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="border-t border-zinc-200 dark:border-zinc-800 px-4 py-3 text-xs text-zinc-500 text-center">
+      <footer className="border-t border-border px-4 py-3 text-xs text-muted-foreground text-center">
         Data:{" "}
         <a
-          className="underline-offset-2 hover:underline hover:text-blue-600"
+          className="underline-offset-2 hover:underline hover:text-[var(--fife)]"
           href="https://fifeweb.org"
           target="_blank"
           rel="noopener noreferrer"
@@ -247,7 +247,7 @@ export default function HomePage() {
         </a>{" "}
         ·{" "}
         <a
-          className="underline-offset-2 hover:underline hover:text-rose-600"
+          className="underline-offset-2 hover:underline hover:text-[var(--tica)]"
           href="https://shows.tica.org"
           target="_blank"
           rel="noopener noreferrer"

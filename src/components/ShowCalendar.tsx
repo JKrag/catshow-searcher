@@ -70,37 +70,37 @@ export function ShowCalendar({ shows }: Props) {
   });
 
   return (
-    <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm p-4">
+    <div className="rounded-2xl bg-card/80 ring-1 ring-border shadow-sm p-4">
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => setAnchor(addMonths(anchor, -1))}
-          className="rounded-lg ring-1 ring-zinc-200 dark:ring-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 px-3 py-1.5 text-sm transition"
+          className="rounded-lg ring-1 ring-border hover:bg-[var(--muted-soft)] px-3 py-1.5 text-sm transition"
           aria-label="Previous month"
         >
           ←
         </button>
-        <h2 className="text-lg font-semibold tracking-tight">{monthLabel}</h2>
+        <h2 className="font-serif text-2xl font-semibold tracking-tight text-foreground">{monthLabel}</h2>
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => setAnchor(startOfMonth(new Date()))}
-            className="rounded-lg ring-1 ring-zinc-200 dark:ring-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 px-3 py-1.5 text-xs transition"
+            className="rounded-lg ring-1 ring-border hover:bg-[var(--muted-soft)] px-3 py-1.5 text-xs transition"
           >
             Today
           </button>
           <button
             onClick={() => setAnchor(addMonths(anchor, 1))}
-            className="rounded-lg ring-1 ring-zinc-200 dark:ring-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 px-3 py-1.5 text-sm transition"
+            className="rounded-lg ring-1 ring-border hover:bg-[var(--muted-soft)] px-3 py-1.5 text-sm transition"
             aria-label="Next month"
           >
             →
           </button>
         </div>
       </div>
-      <div className="grid grid-cols-7 gap-px bg-zinc-200 dark:bg-zinc-800 ring-1 ring-zinc-200 dark:ring-zinc-800 rounded-xl overflow-hidden">
+      <div className="grid grid-cols-7 gap-px bg-border ring-1 ring-border rounded-xl overflow-hidden">
         {WEEKDAYS.map((d) => (
           <div
             key={d}
-            className="bg-zinc-50 dark:bg-zinc-950 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 px-2 py-1.5 text-center"
+            className="bg-[var(--muted-soft)] text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-2 py-1.5 text-center"
           >
             {d}
           </div>
@@ -113,13 +113,13 @@ export function ShowCalendar({ shows }: Props) {
           return (
             <div
               key={key}
-              className={`bg-white dark:bg-zinc-950 min-h-[7rem] p-1.5 transition ${
-                inMonth ? "" : "bg-zinc-50/60 dark:bg-zinc-950/60 opacity-60"
+              className={`bg-[var(--surface)] min-h-[7rem] p-1.5 transition ${
+                inMonth ? "" : "bg-[var(--muted-soft)]/50 opacity-60"
               }`}
             >
               <div
                 className={`text-xs font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${
-                  isToday ? "bg-indigo-600 text-white" : "text-zinc-500"
+                  isToday ? "bg-[var(--primary)] text-[var(--primary-fg)]" : "text-muted-foreground"
                 }`}
               >
                 {d.getDate()}
@@ -135,17 +135,22 @@ export function ShowCalendar({ shows }: Props) {
                     title={`${s.title} — ${s.city ?? ""}, ${s.country ?? ""}`}
                     style={{
                       backgroundColor:
-                        s.source === "FIFe" ? "#dbeafe" : "#ffe4e6",
-                      color: s.source === "FIFe" ? "#1e3a8a" : "#881337",
+                        s.source === "FIFe"
+                          ? "var(--fife-soft)"
+                          : "var(--tica-soft)",
+                      color:
+                        s.source === "FIFe"
+                          ? "var(--fife-fg)"
+                          : "var(--tica-fg)",
                       borderLeftColor:
-                        s.source === "FIFe" ? "#2563eb" : "#e11d48",
+                        s.source === "FIFe" ? "var(--fife)" : "var(--tica)",
                     }}
                   >
                     {s.title}
                   </a>
                 ))}
                 {dayShows.length > 3 && (
-                  <div className="text-[10px] text-zinc-500 px-1">
+                  <div className="text-[10px] text-muted-foreground px-1">
                     +{dayShows.length - 3} more
                   </div>
                 )}
@@ -154,7 +159,7 @@ export function ShowCalendar({ shows }: Props) {
           );
         })}
       </div>
-      <div className="mt-3 flex items-center gap-3 text-xs text-zinc-500">
+      <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
         <OrgBadge org="FIFe" /> <span>FIFe</span>
         <OrgBadge org="TICA" /> <span>TICA</span>
       </div>

@@ -1,48 +1,82 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafaf9;
-  --foreground: #171717;
-  --surface: #ffffff;
-  --border: #e7e5e4;
-  --border-strong: #d6d3d1;
-  --muted: #78716c;
-  --accent: #6366f1;
-  --accent-fg: #ffffff;
-  --fife: #2563eb;
-  --fife-soft: #dbeafe;
-  --fife-fg: #1e3a8a;
-  --tica: #e11d48;
-  --tica-soft: #ffe4e6;
-  --tica-fg: #881337;
+  /* Warm cream + purple/orange/amber palette inspired by the reference design */
+  --background: oklch(0.98 0.01 80);
+  --foreground: oklch(0.25 0.02 260);
+  --surface: oklch(1 0 0);
+  --card: oklch(0.96 0.01 80);
+  --card-foreground: oklch(0.25 0.02 260);
+  --border: oklch(0.88 0.01 240);
+  --border-strong: oklch(0.78 0.01 240);
+  --muted: oklch(0.50 0.02 260);
+  --muted-soft: oklch(0.95 0.01 240);
+
+  --primary: oklch(0.45 0.15 300);
+  --primary-fg: oklch(1 0 0);
+  --secondary: oklch(0.65 0.18 50);
+  --secondary-fg: oklch(0.99 0.02 80);
+  --accent: oklch(0.75 0.15 70);
+  --accent-fg: oklch(0.25 0.02 260);
+
+  /* FIFe = primary purple, TICA = secondary orange */
+  --fife: oklch(0.45 0.15 300);
+  --fife-soft: oklch(0.93 0.04 300);
+  --fife-fg: oklch(0.30 0.12 300);
+  --tica: oklch(0.62 0.18 35);
+  --tica-soft: oklch(0.94 0.04 50);
+  --tica-fg: oklch(0.40 0.15 35);
+
+  --radius: 0.5rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
-  --color-muted: var(--muted);
+  --color-muted: var(--muted-soft);
+  --color-muted-foreground: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-fg);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-fg);
   --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-fg);
   --color-fife: var(--fife);
   --color-tica: var(--tica);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-display);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0b0b0d;
-    --foreground: #ededed;
-    --surface: #18181b;
-    --border: #27272a;
-    --border-strong: #3f3f46;
-    --muted: #a1a1aa;
-    --fife-soft: #1e3a8a40;
-    --fife-fg: #bfdbfe;
-    --tica-soft: #88133740;
-    --tica-fg: #fecdd3;
+    --background: oklch(0.18 0.015 270);
+    --foreground: oklch(0.95 0.01 80);
+    --surface: oklch(0.22 0.015 270);
+    --card: oklch(0.24 0.015 270);
+    --card-foreground: oklch(0.95 0.01 80);
+    --border: oklch(0.32 0.015 270);
+    --border-strong: oklch(0.42 0.015 270);
+    --muted: oklch(0.70 0.02 260);
+    --muted-soft: oklch(0.26 0.015 270);
+
+    --primary: oklch(0.70 0.18 300);
+    --primary-fg: oklch(0.18 0.015 270);
+    --secondary: oklch(0.72 0.18 50);
+    --secondary-fg: oklch(0.18 0.015 270);
+    --accent: oklch(0.80 0.15 70);
+    --accent-fg: oklch(0.18 0.015 270);
+
+    --fife: oklch(0.70 0.18 300);
+    --fife-soft: oklch(0.32 0.10 300);
+    --fife-fg: oklch(0.92 0.05 300);
+    --tica: oklch(0.72 0.18 35);
+    --tica-soft: oklch(0.32 0.10 35);
+    --tica-fg: oklch(0.92 0.05 50);
   }
 }
 
@@ -50,15 +84,47 @@ html,
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
+  font-family: var(--font-body), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  letter-spacing: -0.01em;
 }
 
 body {
   background-image:
-    radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.06), transparent 40%),
-    radial-gradient(circle at 100% 0%, rgba(225, 29, 72, 0.05), transparent 40%);
+    radial-gradient(circle at 0% 0%, oklch(0.45 0.15 300 / 0.06), transparent 45%),
+    radial-gradient(circle at 100% 0%, oklch(0.65 0.18 50 / 0.06), transparent 45%),
+    radial-gradient(circle at 50% 100%, oklch(0.75 0.15 70 / 0.05), transparent 50%);
   background-attachment: fixed;
+}
+
+/* Subtle scrollbars inside scroll panes */
+.thin-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.thin-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 9999px; }
+.thin-scroll::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+.thin-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* Map popup polish */
+.maplibregl-popup-content {
+  border-radius: 12px !important;
+  padding: 12px 14px !important;
+  box-shadow: 0 10px 30px oklch(0 0 0 / 0.14) !important;
+  font-family: var(--font-body), system-ui, sans-serif !important;
+  background: var(--surface) !important;
+  color: var(--foreground) !important;
+}
+.maplibregl-popup-tip { border-top-color: var(--surface) !important; }
+
+/* Distance badge pulse — port from reference */
+.distance-pulse {
+  animation: distance-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) 1;
+}
+@keyframes distance-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 /* Subtle scrollbars inside scroll panes */
