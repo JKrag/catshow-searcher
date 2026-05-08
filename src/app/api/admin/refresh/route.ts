@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runAllScrapers } from "@/lib/scrapers/run";
 import { recentRuns } from "@/lib/scrape-runs";
+import { readStore } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -11,7 +12,7 @@ function unauthorized() {
 
 function authorize(req: NextRequest): boolean {
   const required = process.env.CATZ_ADMIN_TOKEN;
-  if (!required) return true; // dev mode: no token required
+  if (!required) return true;
   const header = req.headers.get("authorization") ?? "";
   const token = header.replace(/^Bearer\s+/i, "");
   return token === required;
@@ -25,5 +26,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   if (!authorize(req)) return unauthorized();
-  return NextResponse.json({ runs: await recentRuns(10) });
+  const store = await readStore();
+  const runs = store ? recentRuns(store, 10) : [];
+  return NextResponse.json({ runs });
 }

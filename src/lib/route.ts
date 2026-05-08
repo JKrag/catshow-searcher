@@ -1,5 +1,3 @@
-import { getSql, ensureMigrated } from "./db";
-
 export interface RouteResult {
   distance_m: number;
   duration_s: number;
@@ -17,34 +15,31 @@ async function rateLimit() {
 }
 
 const r5 = (n: number) => Math.round(n * 1e5) / 1e5;
+const routeCache = new Map<string, RouteResult | null>();
+
+function cacheKey(
+  oLat: number,
+  oLng: number,
+  dLat: number,
+  dLng: number,
+): string {
+  return `${r5(oLat)},${r5(oLng)},${r5(dLat)},${r5(dLng)}`;
+}
 
 export async function getRoute(
   origin: { lat: number; lng: number },
   dest: { lat: number; lng: number },
 ): Promise<RouteResult | null> {
-  await ensureMigrated();
-  const sql = getSql();
-  const oLat = r5(origin.lat),
-    oLng = r5(origin.lng),
-    dLat = r5(dest.lat),
-    dLng = r5(dest.lng);
-
-  const cached = (await sql`
-    SELECT distance_m, duration_s FROM route_cache
-    WHERE origin_lat = ${oLat} AND origin_lng = ${oLng}
-      AND dest_lat   = ${dLat} AND dest_lng   = ${dLng}
-  `) as RouteResult[];
-  if (cached.length) {
-    const row = cached[0];
-    if (row.distance_m == null) return null;
-    return row;
-  }
+  const key = cacheKey(origin.lat, origin.lng, dest.lat, dest.lng);
+  if (routeCache.has(key)) return routeCache.get(key)!;
 
   await rateLimit();
+  const oLng = r5(origin.lng),
+    oLat = r5(origin.lat),
+    dLng = r5(dest.lng),
+    dLat = r5(dest.lat);
   const url = `${OSRM_BASE}/route/v1/driving/${oLng},${oLat};${dLng},${dLat}?overview=false`;
-  const res = await fetch(url, {
-    headers: { "User-Agent": "catz/0.1" },
-  });
+  const res = await fetch(url, { headers: { "User-Agent": "catz/0.1" } });
   let result: RouteResult | null = null;
   if (res.ok) {
     const data = (await res.json()) as {
@@ -58,14 +53,6 @@ export async function getRoute(
       };
     }
   }
-  await sql`
-    INSERT INTO route_cache
-      (origin_lat, origin_lng, dest_lat, dest_lng, distance_m, duration_s, fetched_at)
-    VALUES (${oLat}, ${oLng}, ${dLat}, ${dLng}, ${result?.distance_m ?? null}, ${result?.duration_s ?? null}, NOW())
-    ON CONFLICT (origin_lat, origin_lng, dest_lat, dest_lng) DO UPDATE SET
-      distance_m = EXCLUDED.distance_m,
-      duration_s = EXCLUDED.duration_s,
-      fetched_at = NOW()
-  `;
+  routeCache.set(key, result);
   return result;
 }

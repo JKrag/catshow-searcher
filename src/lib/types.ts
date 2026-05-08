@@ -44,3 +44,14 @@ export interface ShowWithDistance extends Show {
   distance_km?: number | null;
   duration_min?: number | null;
 }
+
+export interface ScrapeRun {
+  id: number;
+  source: string;
+  started_at: string;
+  finished_at: string | null;
+  status: string;
+  items_seen: number;
+  items_changed: number;
+  error: string | null;
+}
