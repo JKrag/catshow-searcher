@@ -46,14 +46,16 @@ export async function readStore(): Promise<CatzStore | null> {
       const res = await fetch(blobs[0].url);
       if (!res.ok) return null;
       return (await res.json()) as CatzStore;
-    } catch {
+    } catch (error) {
+      console.error("Failed to read store from Blob storage:", error);
       return null;
     }
   } else {
     if (!fs.existsSync(LOCAL_PATH)) return null;
     try {
       return JSON.parse(fs.readFileSync(LOCAL_PATH, "utf8")) as CatzStore;
-    } catch {
+    } catch (error) {
+      console.error("Failed to read store from local file:", error);
       return null;
     }
   }
