@@ -1,31 +1,24 @@
-import Database from "better-sqlite3";
-import path from "node:path";
-import fs from "node:fs";
+import postgres from "postgres";
 
-let _db: Database.Database | null = null;
+let _sql: postgres.Sql | null = null;
+let _migrated = false;
 
-export function getDb(): Database.Database {
-  if (_db) return _db;
-  // Vercel's deployment directory is read-only at runtime; only /tmp is writable.
-  // SQLite data in /tmp is ephemeral — migrate to Postgres for true persistence.
-  const dbPath =
-    process.env.CATZ_DB_PATH ??
-    (process.env.VERCEL
-      ? "/tmp/catz.sqlite"
-      : path.join(process.cwd(), ".data", "catz.sqlite"));
-  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-  const db = new Database(dbPath);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
-  migrate(db);
-  _db = db;
-  return db;
+export function getSql(): postgres.Sql {
+  if (!_sql) {
+    if (!process.env.DATABASE_URL) {
+      throw new Error("DATABASE_URL environment variable is not set");
+    }
+    _sql = postgres(process.env.DATABASE_URL);
+  }
+  return _sql;
 }
 
-function migrate(db: Database.Database) {
-  db.exec(`
+export async function ensureMigrated(): Promise<void> {
+  if (_migrated) return;
+  const sql = getSql();
+  await sql`
     CREATE TABLE IF NOT EXISTS shows (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
       source TEXT NOT NULL CHECK (source IN ('FIFe','TICA')),
       source_id TEXT NOT NULL,
       title TEXT NOT NULL,
@@ -35,45 +28,52 @@ function migrate(db: Database.Database) {
       venue TEXT,
       start_date TEXT NOT NULL,
       end_date TEXT NOT NULL,
-      lat REAL,
-      lng REAL,
+      lat DOUBLE PRECISION,
+      lng DOUBLE PRECISION,
       url TEXT,
       raw_json TEXT,
-      scraped_at TEXT NOT NULL DEFAULT (datetime('now')),
+      scraped_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE (source, source_id)
-    );
-    CREATE INDEX IF NOT EXISTS idx_shows_dates ON shows(start_date, end_date);
-    CREATE INDEX IF NOT EXISTS idx_shows_source ON shows(source);
-    CREATE INDEX IF NOT EXISTS idx_shows_country ON shows(country);
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_shows_dates ON shows(start_date, end_date)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_shows_source ON shows(source)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_shows_country ON shows(country)`;
 
+  await sql`
     CREATE TABLE IF NOT EXISTS geocode_cache (
       query TEXT PRIMARY KEY,
-      lat REAL,
-      lng REAL,
+      lat DOUBLE PRECISION,
+      lng DOUBLE PRECISION,
       display_name TEXT,
-      fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
+      fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
 
+  await sql`
     CREATE TABLE IF NOT EXISTS route_cache (
-      origin_lat REAL NOT NULL,
-      origin_lng REAL NOT NULL,
-      dest_lat REAL NOT NULL,
-      dest_lng REAL NOT NULL,
-      distance_m REAL,
-      duration_s REAL,
-      fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
+      origin_lat DOUBLE PRECISION NOT NULL,
+      origin_lng DOUBLE PRECISION NOT NULL,
+      dest_lat DOUBLE PRECISION NOT NULL,
+      dest_lng DOUBLE PRECISION NOT NULL,
+      distance_m DOUBLE PRECISION,
+      duration_s DOUBLE PRECISION,
+      fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       PRIMARY KEY (origin_lat, origin_lng, dest_lat, dest_lng)
-    );
+    )
+  `;
 
+  await sql`
     CREATE TABLE IF NOT EXISTS scrape_runs (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
       source TEXT NOT NULL,
-      started_at TEXT NOT NULL DEFAULT (datetime('now')),
-      finished_at TEXT,
+      started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      finished_at TIMESTAMPTZ,
       status TEXT NOT NULL DEFAULT 'running',
       items_seen INTEGER DEFAULT 0,
       items_changed INTEGER DEFAULT 0,
       error TEXT
-    );
-  `);
+    )
+  `;
+  _migrated = true;
 }

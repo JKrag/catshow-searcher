@@ -25,5 +25,5 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   if (!authorize(req)) return unauthorized();
-  return NextResponse.json({ runs: recentRuns(10) });
+  return NextResponse.json({ runs: await recentRuns(10) });
 }

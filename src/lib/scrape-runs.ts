@@ -1,4 +1,4 @@
-import { getDb } from "./db";
+import { getSql, ensureMigrated } from "./db";
 
 export interface ScrapeRun {
   id: number;
@@ -11,41 +11,36 @@ export interface ScrapeRun {
   error: string | null;
 }
 
-export function startRun(source: string): number {
-  const r = getDb()
-    .prepare("INSERT INTO scrape_runs (source) VALUES (?)")
-    .run(source);
-  return Number(r.lastInsertRowid);
+export async function startRun(source: string): Promise<number> {
+  await ensureMigrated();
+  const rows = await getSql()`
+    INSERT INTO scrape_runs (source) VALUES (${source})
+    RETURNING id
+  `;
+  return Number(rows[0].id);
 }
 
-export function finishRun(
+export async function finishRun(
   id: number,
   status: "ok" | "error",
   data: { items_seen?: number; items_changed?: number; error?: string } = {},
-) {
-  getDb()
-    .prepare(
-      `UPDATE scrape_runs
-       SET finished_at = datetime('now'),
-           status = ?,
-           items_seen = COALESCE(?, items_seen),
-           items_changed = COALESCE(?, items_changed),
-           error = ?
-       WHERE id = ?`,
-    )
-    .run(
-      status,
-      data.items_seen ?? null,
-      data.items_changed ?? null,
-      data.error ?? null,
-      id,
-    );
+): Promise<void> {
+  await getSql()`
+    UPDATE scrape_runs
+    SET finished_at  = NOW(),
+        status       = ${status},
+        items_seen   = COALESCE(${data.items_seen ?? null}, items_seen),
+        items_changed = COALESCE(${data.items_changed ?? null}, items_changed),
+        error        = ${data.error ?? null}
+    WHERE id = ${id}
+  `;
 }
 
-export function recentRuns(limit = 20): ScrapeRun[] {
-  return getDb()
-    .prepare(
-      "SELECT * FROM scrape_runs ORDER BY started_at DESC LIMIT ?",
-    )
-    .all(limit) as ScrapeRun[];
+export async function recentRuns(limit = 20): Promise<ScrapeRun[]> {
+  await ensureMigrated();
+  return getSql()`
+    SELECT * FROM scrape_runs
+    ORDER BY started_at DESC
+    LIMIT ${limit}
+  ` as Promise<ScrapeRun[]>;
 }

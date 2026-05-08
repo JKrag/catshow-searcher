@@ -1,4 +1,4 @@
-import { getDb } from "./db";
+import { getSql, ensureMigrated } from "./db";
 
 export interface GeocodeResult {
   lat: number;
@@ -20,18 +20,16 @@ async function rateLimit() {
   if (wait > 0) await new Promise((r) => setTimeout(r, wait));
 }
 
-export async function geocode(
-  query: string,
-): Promise<GeocodeResult | null> {
-  const db = getDb();
-  const cached = db
-    .prepare(
-      "SELECT lat, lng, display_name FROM geocode_cache WHERE query = ?",
-    )
-    .get(query) as GeocodeResult | undefined;
-  if (cached) {
-    if (cached.lat == null || cached.lng == null) return null;
-    return cached;
+export async function geocode(query: string): Promise<GeocodeResult | null> {
+  await ensureMigrated();
+  const sql = getSql();
+  const cached = (await sql`
+    SELECT lat, lng, display_name FROM geocode_cache WHERE query = ${query}
+  `) as GeocodeResult[];
+  if (cached.length) {
+    const row = cached[0];
+    if (row.lat == null || row.lng == null) return null;
+    return row;
   }
 
   await rateLimit();
@@ -54,14 +52,14 @@ export async function geocode(
       }
     : null;
 
-  db.prepare(
-    `INSERT OR REPLACE INTO geocode_cache (query, lat, lng, display_name, fetched_at)
-     VALUES (?, ?, ?, ?, datetime('now'))`,
-  ).run(
-    query,
-    result?.lat ?? null,
-    result?.lng ?? null,
-    result?.display_name ?? null,
-  );
+  await sql`
+    INSERT INTO geocode_cache (query, lat, lng, display_name, fetched_at)
+    VALUES (${query}, ${result?.lat ?? null}, ${result?.lng ?? null}, ${result?.display_name ?? null}, NOW())
+    ON CONFLICT (query) DO UPDATE SET
+      lat          = EXCLUDED.lat,
+      lng          = EXCLUDED.lng,
+      display_name = EXCLUDED.display_name,
+      fetched_at   = NOW()
+  `;
   return result;
 }
