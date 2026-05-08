@@ -6,9 +6,13 @@ let _db: Database.Database | null = null;
 
 export function getDb(): Database.Database {
   if (_db) return _db;
+  // Vercel's deployment directory is read-only at runtime; only /tmp is writable.
+  // SQLite data in /tmp is ephemeral — migrate to Postgres for true persistence.
   const dbPath =
     process.env.CATZ_DB_PATH ??
-    path.join(process.cwd(), ".data", "catz.sqlite");
+    (process.env.VERCEL
+      ? "/tmp/catz.sqlite"
+      : path.join(process.cwd(), ".data", "catz.sqlite"));
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
   const db = new Database(dbPath);
   db.pragma("journal_mode = WAL");
