@@ -91,7 +91,12 @@ export async function runAllScrapers(
   const tica = await runOne("TICA", fetchTica, store, geocodeBudget);
 
   store.updated_at = new Date().toISOString();
-  await writeStore(store);
+  try {
+    await writeStore(store);
+  } catch (e) {
+    console.error("writeStore failed:", e);
+    // Scrape results are still valid even if persist failed; caller sees outcomes
+  }
 
   return [fife, tica];
 }

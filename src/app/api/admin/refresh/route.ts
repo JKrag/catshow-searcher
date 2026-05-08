@@ -20,8 +20,14 @@ function authorize(req: NextRequest): boolean {
 
 export async function POST(req: NextRequest) {
   if (!authorize(req)) return unauthorized();
-  const results = await runAllScrapers();
-  return NextResponse.json({ results });
+  try {
+    const results = await runAllScrapers();
+    return NextResponse.json({ results });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("runAllScrapers threw:", e);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }
 
 export async function GET(req: NextRequest) {

@@ -5,7 +5,10 @@ import type { Show, ScrapeRun } from "./types";
 import type { GeocodeResult } from "./geocode";
 
 const BLOB_KEY = "catz-data.json";
-const LOCAL_PATH = path.join(process.cwd(), ".data", "catz.json");
+// Vercel's project root is read-only; /tmp is the only writable dir without Blob
+export const LOCAL_PATH = process.env.VERCEL
+  ? "/tmp/catz.json"
+  : path.join(process.cwd(), ".data", "catz.json");
 const STORE_TTL_MS = 24 * 60 * 60 * 1000;
 
 export interface CatzStore {
@@ -69,10 +72,8 @@ export async function getOrLoadStore(): Promise<CatzStore> {
   const stored = await readStore();
 
   if (!stored) {
-    // First request ever — blocking scrape
-    const { runAllScrapers } = await import("./scrapers/run");
-    await runAllScrapers();
-    return _cachedStore ?? { ...EMPTY_STORE };
+    // No data yet — return empty and let the admin trigger the first scrape
+    return { ...EMPTY_STORE };
   }
 
   _cachedStore = stored;
