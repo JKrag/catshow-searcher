@@ -19,11 +19,11 @@ async function runOne(
   fetcher: () => Promise<Awaited<ReturnType<typeof fetchFife>>>,
   geocodeBudget: number,
 ): Promise<ScrapeOutcome> {
-  const runId = startRun(source);
+  const runId = await startRun(source);
   try {
     const items = await fetcher();
-    const { inserted, updated } = upsertShows(items);
-    const missing = listShowsMissingGeocode(geocodeBudget).filter(
+    const { inserted, updated } = await upsertShows(items);
+    const missing = (await listShowsMissingGeocode(geocodeBudget)).filter(
       (s) => s.source === source,
     );
     let geocoded = 0;
@@ -33,21 +33,21 @@ async function runOne(
       try {
         const g = await geocode(q);
         if (g) {
-          setShowGeocode(s.id, g.lat, g.lng);
+          await setShowGeocode(s.id, g.lat, g.lng);
           geocoded++;
         }
       } catch (e) {
         console.warn(`geocode failed for ${q}`, e);
       }
     }
-    finishRun(runId, "ok", {
+    await finishRun(runId, "ok", {
       items_seen: items.length,
       items_changed: inserted + updated,
     });
     return { source, ok: true, inserted, updated, geocoded };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    finishRun(runId, "error", { error: msg });
+    await finishRun(runId, "error", { error: msg });
     return { source, ok: false, inserted: 0, updated: 0, geocoded: 0, error: msg };
   }
 }

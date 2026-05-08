@@ -1,4 +1,4 @@
-import { getDb } from "./db";
+import { getSql, ensureMigrated } from "./db";
 
 export interface RouteResult {
   distance_m: number;
@@ -22,21 +22,22 @@ export async function getRoute(
   origin: { lat: number; lng: number },
   dest: { lat: number; lng: number },
 ): Promise<RouteResult | null> {
-  const db = getDb();
+  await ensureMigrated();
+  const sql = getSql();
   const oLat = r5(origin.lat),
     oLng = r5(origin.lng),
     dLat = r5(dest.lat),
     dLng = r5(dest.lng);
 
-  const cached = db
-    .prepare(
-      `SELECT distance_m, duration_s FROM route_cache
-       WHERE origin_lat = ? AND origin_lng = ? AND dest_lat = ? AND dest_lng = ?`,
-    )
-    .get(oLat, oLng, dLat, dLng) as RouteResult | undefined;
-  if (cached) {
-    if (cached.distance_m == null) return null;
-    return cached;
+  const cached = (await sql`
+    SELECT distance_m, duration_s FROM route_cache
+    WHERE origin_lat = ${oLat} AND origin_lng = ${oLng}
+      AND dest_lat   = ${dLat} AND dest_lng   = ${dLng}
+  `) as RouteResult[];
+  if (cached.length) {
+    const row = cached[0];
+    if (row.distance_m == null) return null;
+    return row;
   }
 
   await rateLimit();
@@ -57,17 +58,14 @@ export async function getRoute(
       };
     }
   }
-  db.prepare(
-    `INSERT OR REPLACE INTO route_cache
-     (origin_lat, origin_lng, dest_lat, dest_lng, distance_m, duration_s, fetched_at)
-     VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
-  ).run(
-    oLat,
-    oLng,
-    dLat,
-    dLng,
-    result?.distance_m ?? null,
-    result?.duration_s ?? null,
-  );
+  await sql`
+    INSERT INTO route_cache
+      (origin_lat, origin_lng, dest_lat, dest_lng, distance_m, duration_s, fetched_at)
+    VALUES (${oLat}, ${oLng}, ${dLat}, ${dLng}, ${result?.distance_m ?? null}, ${result?.duration_s ?? null}, NOW())
+    ON CONFLICT (origin_lat, origin_lng, dest_lat, dest_lng) DO UPDATE SET
+      distance_m = EXCLUDED.distance_m,
+      duration_s = EXCLUDED.duration_s,
+      fetched_at = NOW()
+  `;
   return result;
 }

@@ -7,12 +7,31 @@ date / search, and see driving distance from their home address.
 ## Stack
 
 - **Next.js 16** (App Router, TypeScript) + **Tailwind v4**
-- **better-sqlite3** for local data + caches (swap to Postgres for prod)
+- **Postgres** via [`postgres`](https://github.com/porsager/postgres) driver (Neon in production)
 - **MapLibre GL** + OpenStreetMap raster tiles
 - **Nominatim** for geocoding (cached in `geocode_cache`)
 - **OSRM** demo server for driving distance/time (cached in `route_cache`)
 
 ## Local development
+
+### 1. Start a local Postgres database
+
+```bash
+docker compose up -d
+```
+
+This starts a `postgres:16` container on port 5432 with credentials `catz/catz/catz`.
+Data is persisted in a named Docker volume (`catz_pgdata`).
+
+### 2. Configure environment
+
+```bash
+cp .env.local.example .env.local
+# The default DATABASE_URL in the example already points at the Docker container.
+# Edit if needed.
+```
+
+### 3. Install and run
 
 ```bash
 npm install
@@ -20,8 +39,7 @@ npm run dev
 # http://localhost:3000
 ```
 
-The SQLite database lives at `.data/catz.sqlite` (gitignored). It is created
-automatically on first request.
+The database schema is created automatically on the first request.
 
 ### Seed it with shows
 
@@ -34,6 +52,16 @@ You can also POST directly:
 ```bash
 curl -X POST http://localhost:3000/api/admin/refresh
 ```
+
+### Connecting to other databases locally
+
+See `.env.local.example` for three pre-configured scenarios:
+
+| Scenario | When to use |
+|---|---|
+| Local Docker (default) | Day-to-day development, no cloud account needed |
+| Neon dev branch | Testing against real cloud infrastructure |
+| Neon production | Debugging prod data locally (use a read-only role) |
 
 ## Project layout
 
@@ -56,7 +84,7 @@ src/
     ShowMap.tsx                 MapLibre map with org-coloured markers
     home.ts                     useHome() hook + localStorage helpers
   lib/
-    db.ts                       SQLite connection + schema
+    db.ts                       Postgres connection + schema (auto-migrated)
     types.ts                    Show, NormalisedShow, ShowFilter, …
     shows-repo.ts               upsert + filtered query (incl. radius)
     scrape-runs.ts              start/finish/list run records
@@ -134,27 +162,61 @@ Each show is upserted by `(source, source_id)`. Re-running the refresh is safe.
 
 ### Environment variables
 
-| Variable           | Required | Description                              |
-|--------------------|----------|------------------------------------------|
-| `CATZ_DB_PATH`     | No       | SQLite path (default: `.data/catz.sqlite`)|
+| Variable           | Required | Description                               |
+|--------------------|----------|-------------------------------------------|
+| `DATABASE_URL`     | **Yes**  | Postgres connection string                |
 | `CATZ_ADMIN_TOKEN` | No       | Bearer token for `/api/admin/refresh`     |
-| `CATZ_OSRM_BASE`   | No       | OSRM base URL                            |
+| `CATZ_OSRM_BASE`   | No       | OSRM base URL                             |
 | `CATZ_USER_AGENT`  | No       | User-Agent for external API calls         |
 
-## Deployment (TODO — blocked)
+See `.env.local.example` for a template with all three local scenarios.
 
-The MVP uses SQLite (`better-sqlite3`) which does not run on Vercel's serverless
-runtime. To deploy:
+## Deployment
 
-1. **Swap `src/lib/db.ts`** to use Vercel Postgres or Neon. The SQL schema in
-   `migrate()` is standard SQL and mostly portable — only `datetime('now')`
-   needs changing to `now()`.
-2. **Provision a database** (Vercel Postgres, Neon, or Supabase).
-3. **Set env vars** in Vercel project settings.
-4. **Configure a cron** (Vercel Cron or GitHub Action) to POST
-   `/api/admin/refresh` daily with a Bearer token.
-5. **Swap OSRM** to a self-hosted instance or paid service
-   (OpenRouteService, Google Distance Matrix) for production traffic.
+The app uses Postgres (via the [`postgres`](https://github.com/porsager/postgres)
+driver) and deploys to Vercel with [Neon](https://neon.tech) as the database.
+
+### Option A — Vercel × Neon integration (recommended)
+
+1. Open your Vercel project → **Storage** tab → **Add** → **Postgres (Neon)**.
+2. Follow the prompts. Vercel automatically injects `DATABASE_URL`, `PGHOST`,
+   and friends into **all environments** (production, preview, local dev pull).
+   No manual env var setup needed.
+3. Redeploy — the schema is created automatically on the first request.
+
+### Option B — Manual Neon
+
+1. Create a project on [neon.tech](https://neon.tech).
+2. Copy the **pooled connection string** from the Connection Details panel
+   (select "Connection string" → enable "Pooling").
+3. In Vercel → **Settings** → **Environment Variables**, add:
+   - `DATABASE_URL` = the connection string above
+4. Redeploy.
+
+### First-run steps (both options)
+
+1. Set `CATZ_ADMIN_TOKEN` in Vercel environment variables to a strong random
+   string (e.g. `openssl rand -hex 32`).
+2. Trigger the first scrape:
+   ```bash
+   curl -X POST https://your-app.vercel.app/api/admin/refresh \
+     -H "Authorization: Bearer <your-token>"
+   ```
+3. Optionally configure a [Vercel Cron](https://vercel.com/docs/cron-jobs) job
+   to run this daily.
+
+### OSRM note
+
+The default OSRM endpoint (`router.project-osrm.org`) is a public demo server
+not suitable for production traffic. Set `CATZ_OSRM_BASE` to a self-hosted
+OSRM instance or a commercial routing provider before going live.
+
+### Preview environments
+
+All Vercel preview deployments share the same Neon database by default. To
+isolate preview data, enable
+[Neon branching](https://neon.tech/docs/introduction/branching) and configure
+Vercel to provide a per-branch connection string.
 
 ## Roadmap / future features
 

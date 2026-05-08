@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     };
   }
 
-  const shows = listShows(filter);
-  const countries = distinctCountries();
+  const shows = await listShows(filter);
+  const countries = await distinctCountries();
   return NextResponse.json({ shows, countries });
 }
