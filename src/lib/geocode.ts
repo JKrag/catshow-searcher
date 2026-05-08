@@ -22,7 +22,7 @@ export async function geocode(
   query: string,
   cache?: Record<string, GeocodeResult | null>,
 ): Promise<GeocodeResult | null> {
-  if (cache && query in cache) {
+  if (cache && Object.prototype.hasOwnProperty.call(cache, query)) {
     return cache[query];
   }
 
