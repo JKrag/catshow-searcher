@@ -46,11 +46,11 @@ export interface ShowWithDistance extends Show {
 }
 
 export interface ScrapeRun {
-  id: number;
-  source: string;
+  id: string;
+  source: Org;
   started_at: string;
   finished_at: string | null;
-  status: string;
+  status: "ok" | "error";
   items_seen: number;
   items_changed: number;
   error: string | null;

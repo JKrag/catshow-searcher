@@ -47,7 +47,7 @@ async function runOne(
       }
     }
     const run: ScrapeRun = {
-      id: Date.now(),
+      id: crypto.randomUUID(),
       source,
       started_at,
       finished_at: new Date().toISOString(),
@@ -61,7 +61,7 @@ async function runOne(
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     const run: ScrapeRun = {
-      id: Date.now(),
+      id: crypto.randomUUID(),
       source,
       started_at,
       finished_at: new Date().toISOString(),

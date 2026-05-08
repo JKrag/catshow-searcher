@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 interface Run {
-  id: number;
+  id: string;
   source: string;
   started_at: string;
   finished_at: string | null;
