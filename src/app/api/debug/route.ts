@@ -4,7 +4,12 @@ import { readStore, isStale, LOCAL_PATH } from "@/lib/store";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const blobConfigured = !!process.env.BLOB_READ_WRITE_TOKEN;
+  const blobEnvKeys = Object.keys(process.env).filter((k) =>
+    k.startsWith("BLOB"),
+  );
+  const blobConfigured = blobEnvKeys.some((k) =>
+    k.startsWith("BLOB_READ_WRITE_TOKEN"),
+  );
   const onVercel = !!process.env.VERCEL;
 
   let store = null;
@@ -17,6 +22,7 @@ export async function GET() {
 
   return NextResponse.json({
     blob_configured: blobConfigured,
+    blob_env_keys: blobEnvKeys,
     on_vercel: onVercel,
     local_path: LOCAL_PATH,
     store_exists: store !== null,

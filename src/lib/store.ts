@@ -11,6 +11,15 @@ export const LOCAL_PATH = process.env.VERCEL
   : path.join(process.cwd(), ".data", "catz.json");
 const STORE_TTL_MS = 24 * 60 * 60 * 1000;
 
+// Vercel may name the token BLOB_READ_WRITE_TOKEN or BLOB_READ_WRITE_TOKEN_<STORE>
+function getBlobToken(): string | undefined {
+  if (process.env.BLOB_READ_WRITE_TOKEN) return process.env.BLOB_READ_WRITE_TOKEN;
+  const key = Object.keys(process.env).find((k) =>
+    k.startsWith("BLOB_READ_WRITE_TOKEN_"),
+  );
+  return key ? process.env[key] : undefined;
+}
+
 export interface CatzStore {
   shows: Show[];
   geocode_cache: Record<string, GeocodeResult | null>;
@@ -29,9 +38,10 @@ let _cachedStore: CatzStore | null = null;
 let _refreshing = false;
 
 export async function readStore(): Promise<CatzStore | null> {
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
+  const token = getBlobToken();
+  if (token) {
     try {
-      const { blobs } = await list({ prefix: BLOB_KEY });
+      const { blobs } = await list({ prefix: BLOB_KEY, token });
       if (!blobs.length) return null;
       const res = await fetch(blobs[0].url);
       if (!res.ok) return null;
@@ -51,10 +61,12 @@ export async function readStore(): Promise<CatzStore | null> {
 
 export async function writeStore(store: CatzStore): Promise<void> {
   _cachedStore = store;
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
+  const token = getBlobToken();
+  if (token) {
     await put(BLOB_KEY, JSON.stringify(store), {
       access: "public",
       addRandomSuffix: false,
+      token,
     });
   } else {
     fs.mkdirSync(path.dirname(LOCAL_PATH), { recursive: true });
