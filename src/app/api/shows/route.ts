@@ -4,6 +4,7 @@ import { listShows, distinctCountries } from "@/lib/shows-repo";
 import type { Org, ShowFilter } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;

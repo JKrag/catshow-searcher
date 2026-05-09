@@ -86,8 +86,12 @@ export async function getOrLoadStore(): Promise<CatzStore> {
   const stored = await readStore();
 
   if (!stored) {
-    // No data yet — return empty and let the admin trigger the first scrape
-    return { ...EMPTY_STORE };
+    // Blob read failed but we have a warm in-memory copy — prefer it over empty
+    if (_cachedStore) return _cachedStore;
+    // Truly no data — seed via blocking scrape so the first visitor gets results
+    const { runAllScrapers } = await import("./scrapers/run");
+    await runAllScrapers();
+    return (await readStore()) ?? { ...EMPTY_STORE };
   }
 
   _cachedStore = stored;
