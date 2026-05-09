@@ -62,8 +62,9 @@ Done. Vitest with node environment and `@/*` alias. Run with `npm test` (one-sho
 
 Tests cover the critical "preserve detail fields on update" path in `upsertShows`.
 
-### #10 — CI pipeline (GitHub Actions)
-Comes after #9 — no point wiring up CI before tests exist. Add lint + test + build checks.
+### #10 — CI pipeline (GitHub Actions) ✅
+Done. GitHub Actions workflow triggers on pull_request to main. Runs `npm ci` + `npm test`
+(Vitest) on Node 22. Lint and build checks deferred — test coverage is the critical gate.
 
 ---
 
@@ -99,6 +100,6 @@ on components that are still changing.
 | 4 | #14 Show format / show type | ✅ Done | #6 |
 | 5 | #8 External links | ✅ Done | #6 |
 | 6 | #9 Unit tests | ✅ Done | #6 (architecture stable) |
-| 7 | #10 CI pipeline | Pending | #9 |
+| 7 | #10 CI pipeline | ✅ Done | #9 |
 | 8 | #11 Redesign epic | Pending | design doc first |
 | 9 | #12 Internationalization | Pending | #11 (UI stable) |
