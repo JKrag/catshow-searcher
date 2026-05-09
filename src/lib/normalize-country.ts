@@ -20,6 +20,19 @@ const ALIASES: Record<string, string> = {
   // Spanish
   "españa": "Spain",
   "espana": "Spain",
+  // Portuguese (Brazil)
+  "brasil": "Brazil",
+  // Spanish-speaking Americas
+  "méxico": "Mexico",
+  "mexico": "Mexico",
+  "panamá": "Panama",
+  "panama": "Panama",
+  // Swiss (French / German / Italian names)
+  "suisse": "Switzerland",
+  "schweiz": "Switzerland",
+  "svizzera": "Switzerland",
+  // Japanese
+  "日本": "Japan",
   // Slovenian
   "slovenija": "Slovenia",
   // Croatian
@@ -54,8 +67,8 @@ const ALIASES: Record<string, string> = {
   "wales": "United Kingdom",
 };
 
-// TICA encodes regional clubs by appending "Regional" to the country/region name
-const STRIP_SUFFIXES = ["regional", "region"];
+// TICA appends these suffixes to encode regional/annual club designations
+const STRIP_SUFFIXES = ["regional", "region", "annual"];
 
 export function normalizeCountry(raw: string | null | undefined): string | null {
   if (!raw) return null;

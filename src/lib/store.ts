@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Show, ScrapeRun } from "./types";
 import type { GeocodeResult } from "./geocode";
+import { normalizeCountry } from "./normalize-country";
 
 const BLOB_KEY = "catz-data.json";
 // Vercel's project root is read-only; /tmp is the only writable dir without Blob
@@ -80,6 +81,20 @@ export function isStale(store: CatzStore): boolean {
   return Date.now() - new Date(store.updated_at).getTime() > STORE_TTL_MS;
 }
 
+// Re-runs normalizeCountry on all existing shows — fixes data written before
+// normalization was deployed. Returns true if anything changed.
+function migrateCountries(store: CatzStore): boolean {
+  let changed = false;
+  for (const show of store.shows) {
+    const normalized = normalizeCountry(show.country);
+    if (normalized !== show.country) {
+      show.country = normalized;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 export async function getOrLoadStore(): Promise<CatzStore> {
   if (_cachedStore && !isStale(_cachedStore)) return _cachedStore;
 
@@ -94,7 +109,9 @@ export async function getOrLoadStore(): Promise<CatzStore> {
     return (await readStore()) ?? { ...EMPTY_STORE };
   }
 
+  const migrated = migrateCountries(stored);
   _cachedStore = stored;
+  if (migrated) void writeStore(stored);
 
   if (isStale(stored) && !_refreshing) {
     _refreshing = true;
