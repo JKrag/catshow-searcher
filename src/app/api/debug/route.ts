@@ -25,6 +25,11 @@ function localGitInfo(): { sha: string; branch: string } {
 }
 
 export async function GET() {
+  // Available in dev and Vercel preview deployments; hidden on production URL
+  if (process.env.VERCEL_ENV === "production") {
+    return new Response(null, { status: 404 });
+  }
+
   const blobEnvKeys = Object.keys(process.env).filter((k) =>
     k.startsWith("BLOB"),
   );
