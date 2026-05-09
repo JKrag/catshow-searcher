@@ -4,6 +4,21 @@ Brief record of significant changes. Newest first. Each entry covers a PR or log
 
 ---
 
+## PR #24 — Issue #6 triage and sub-issue breakdown (planning only)
+
+- Re-checked "Separate handling of TICA and FIFe shows" against the actual code.
+- Confirmed what is already implemented:
+  - org-specific types and detail fields
+  - org-specific detail scraping
+- Confirmed what is not implemented yet:
+  - per-org JSON blobs
+  - plugin-style org contract/registry
+  - source-specific refresh cadence
+  - plugin-owned detail rendering
+- Updated `ROADMAP.md` with a concrete sub-issue split (#6A–#6D) and acceptance-oriented scope.
+
+---
+
 ## commit bbe8d60 — Unit tests (#9)
 
 **Vitest setup** (`vitest.config.ts`, `package.json`)
