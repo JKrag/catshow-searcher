@@ -1,5 +1,6 @@
 import type { CatzStore } from "./store";
 import type { NormalisedShow, Show, ShowFilter } from "./types";
+import { normalizeCountry } from "./normalize-country";
 
 export function upsertShows(
   store: CatzStore,
@@ -18,7 +19,7 @@ export function upsertShows(
         ...store.shows[idx],
         title: r.title,
         club: r.club ?? null,
-        country: r.country ?? null,
+        country: normalizeCountry(r.country),
         city: r.city ?? null,
         venue: r.venue ?? null,
         start_date: r.start_date,
@@ -34,7 +35,7 @@ export function upsertShows(
         source_id: r.source_id,
         title: r.title,
         club: r.club ?? null,
-        country: r.country ?? null,
+        country: normalizeCountry(r.country),
         city: r.city ?? null,
         venue: r.venue ?? null,
         start_date: r.start_date,
