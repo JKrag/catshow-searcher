@@ -3,31 +3,41 @@
 ## Project context
 
 Catz is a cat show finder that combines FIFe and TICA show calendars into one
-UI with map, calendar, and list views. See README.md for full architecture,
-data model, roadmap, and deployment notes.
+UI with map, calendar, and list views. See README.md for architecture overview.
 
 ## Key conventions
 
-- Data layer uses SQLite via `better-sqlite3` (in `src/lib/db.ts`). Schema is
-  auto-migrated on first connection. Will be swapped to Postgres for deployment.
-- Scrapers are in `src/lib/scrapers/` and return `NormalisedShow[]`.
-  Always upsert by `(source, source_id)`.
-- External API calls (Nominatim, OSRM) are rate-limited in-process and
-  results cached in the DB. Respect these limits.
+- Data layer: single JSON blob via `@vercel/blob` (`catz-data.json`). Local
+  fallback at `.data/catz.json`. See `src/lib/store.ts`.
+- `CatzStore` is the blob schema: `shows[]`, `geocode_cache`, `scrape_runs`, `updated_at`.
+- `Show` is a discriminated union: `FifeShow | TicaShow` (see `src/lib/types.ts`).
+  Always upsert by `(source, source_id)` via `upsertShows` in `src/lib/shows-repo.ts`.
+- Scrapers in `src/lib/scrapers/` return `NormalisedFifeShow[]` or `NormalisedTicaShow[]`.
+- Detail fetching (show type, website/flyer) is a post-scrape batch job — rate-limited
+  to 1 req/sec, budget-capped. `detail_fetched` flag prevents re-fetching.
+- Store migrations run on every load (`migrateStore` in `store.ts`) and write back
+  if anything changed — keep them idempotent.
+- External API calls (Nominatim, OSRM, fifeweb.org, shows.tica.org) are rate-limited.
+  See WORLD-KNOWLEDGE.md for exact endpoints, headers, and quirks.
 - UI is all client components (`"use client"`) since the page fetches data
   via `/api/shows`. Filter state is local React state.
 - Home address is persisted in `localStorage` (key: `catz.home`).
-- FIFe = blue, TICA = rose — consistent across badges, calendar cells, and
-  map markers.
+- FIFe = blue, TICA = rose — consistent across badges, calendar cells, and map markers.
 
-## What's done (MVP)
+## Living documents — keep these up to date
 
-All core features work end-to-end: scraping, geocoding, routing, filtered API,
+When you make changes, update the relevant files before committing:
+
+| File | Update when |
+|------|-------------|
+| `ROADMAP.md` | An issue is completed (mark ✅) or a new one is scoped |
+| `CHANGELOG.md` | A PR is ready — add a section summarising what changed and why |
+| `WORLD-KNOWLEDGE.md` | You discover or correct a fact about an external system (URL format, auth requirements, field structure, rate limits) |
+
+## What's done
+
+All core features work end-to-end: scraping both FIFe and TICA, detail-page
+fetching (show type + club website/flyer), geocoding, routing, filtered API,
 list/calendar/map views with org badges, home address + distance.
 
-## What's next
-
-See "Roadmap / future features" in README.md. Next priority:
-1. Deploy (swap SQLite → Postgres)
-2. Judge scraping + filtering
-3. AI free-text filtering
+See CHANGELOG.md for a full history. See ROADMAP.md for what's next.
