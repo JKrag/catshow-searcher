@@ -20,6 +20,8 @@ interface BaseShow {
 export interface FifeShow extends BaseShow {
   source: "FIFe";
   show_type: string | null;
+  website_url: string | null;
+  detail_fetched: boolean;
 }
 
 export interface TicaShow extends BaseShow {

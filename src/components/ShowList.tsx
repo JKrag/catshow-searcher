@@ -106,6 +106,17 @@ export function ShowList({ shows, homeSet }: Props) {
                         ↗
                       </a>
                     )}
+                    {s.source === "FIFe" && s.website_url && (
+                      <a
+                        href={s.website_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Club website"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground hover:text-[var(--fife)] hover:bg-[var(--fife)]/10 transition text-[10px] font-semibold"
+                      >
+                        🌐
+                      </a>
+                    )}
                     {s.source === "TICA" && s.flyer_url && (
                       <a
                         href={s.flyer_url}

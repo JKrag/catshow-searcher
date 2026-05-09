@@ -3,12 +3,14 @@ import type { CatzStore } from "../store";
 import {
   upsertShows,
   listShowsMissingGeocode,
+  listFifeShowsMissingDetail,
   listTicaShowsMissingDetail,
   setShowGeocode,
+  setFifeDetail,
   setTicaDetail,
 } from "../shows-repo";
 import { geocode } from "../geocode";
-import { fetchFife } from "./fife";
+import { fetchFife, fetchFifeDetail } from "./fife";
 import { fetchTica, fetchTicaDetail } from "./tica";
 import type { NormalisedShow, Org, ScrapeRun } from "../types";
 
@@ -77,6 +79,27 @@ async function runOne(
   }
 }
 
+async function fetchFifeDetails(
+  store: CatzStore,
+  budget: number,
+): Promise<number> {
+  const pending = listFifeShowsMissingDetail(store, budget);
+  let fetched = 0;
+  for (const show of pending) {
+    try {
+      const detail = await fetchFifeDetail(show.url!);
+      setFifeDetail(store, show.source_id, detail.show_type, detail.website_url);
+      fetched++;
+    } catch (e) {
+      console.warn(`FIFe detail fetch failed for ${show.url}:`, e);
+      setFifeDetail(store, show.source_id, null, null);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  if (fetched > 0) console.log(`FIFe details fetched: ${fetched}`);
+  return fetched;
+}
+
 async function fetchTicaDetails(
   store: CatzStore,
   budget: number,
@@ -116,7 +139,8 @@ export async function runAllScrapers(
   const fife = await runOne("FIFe", fetchFife, store, geocodeBudget);
   const tica = await runOne("TICA", fetchTica, store, geocodeBudget);
 
-  // Batch-fetch TICA show details (show_format, flyer_url) for shows not yet fetched
+  // Batch-fetch show details for shows not yet fetched (rate-limited, sequential)
+  await fetchFifeDetails(store, ticaDetailBudget);
   await fetchTicaDetails(store, ticaDetailBudget);
 
   store.updated_at = new Date().toISOString();

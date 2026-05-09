@@ -97,6 +97,8 @@ function migrateStore(store: CatzStore): boolean {
     const raw = show as unknown as Record<string, unknown>;
     if (show.source === "FIFe") {
       if (raw["show_type"] === undefined) { raw["show_type"] = null; changed = true; }
+      if (raw["website_url"] === undefined) { raw["website_url"] = null; changed = true; }
+      if (raw["detail_fetched"] === undefined) { raw["detail_fetched"] = false; changed = true; }
     } else if (show.source === "TICA") {
       if (raw["show_format"] === undefined) { raw["show_format"] = null; changed = true; }
       if (raw["flyer_url"] === undefined) { raw["flyer_url"] = null; changed = true; }

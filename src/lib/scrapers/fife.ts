@@ -137,6 +137,31 @@ export async function fetchFife(): Promise<NormalisedFifeShow[]> {
   return shows;
 }
 
+export interface FifeShowDetail {
+  show_type: string | null;
+  website_url: string | null;
+}
+
+export function parseFifeDetail(html: string): FifeShowDetail {
+  const typeMatch = html.match(/Show type\s*<\/dt>\s*<dd class="tribe-meta-value">\s*([\s\S]*?)\s*<\/dd>/);
+  const show_type = typeMatch ? typeMatch[1].trim() || null : null;
+
+  const organizerMatch = html.match(/"organizer":\{[^}]*"url":"([^"]+)"/);
+  const rawUrl = organizerMatch ? organizerMatch[1] : null;
+  const website_url =
+    rawUrl && rawUrl !== "" && !rawUrl.includes("fifeweb.org") ? rawUrl : null;
+
+  return { show_type, website_url };
+}
+
+export async function fetchFifeDetail(eventUrl: string): Promise<FifeShowDetail> {
+  const res = await fetch(eventUrl, {
+    headers: { "User-Agent": "catz/0.1 (cat-show finder)" },
+  });
+  if (!res.ok) throw new Error(`FIFe detail HTTP ${res.status} for ${eventUrl}`);
+  return parseFifeDetail(await res.text());
+}
+
 function subtractOneDay(end: string, fallback: string): string {
   // For all-day iCal events, DTEND is the day after the event ends.
   if (!/^\d{4}-\d{2}-\d{2}$/.test(end)) return end;
