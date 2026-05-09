@@ -19,10 +19,39 @@ implemented in `src/lib/scrapers/tica.ts` and wired into `runAllScrapers` as a b
 
 ## Phase 2 — Architecture
 
-### #6 — Separate TICA/FIFe handling ✅
-Done. `Show` is now a `FifeShow | TicaShow` discriminated union; `NormalisedShow` is split
-into `NormalisedFifeShow | NormalisedTicaShow`. Each org carries its own extended fields
-without polluting the shared schema. Store migration is one-pass and idempotent.
+### #6 — Separate TICA/FIFe handling (partially complete)
+Current status after re-check:
+
+- ✅ Done: type-level separation (`Show = FifeShow | TicaShow`, org-specific normalized types).
+- ✅ Done: org-specific detail fields and detail-fetch logic for FIFe/TICA.
+- ❌ Not done: separate per-org data files (storage is still one blob: `catz-data.json`).
+- ❌ Not done: plugin-style org modules with a shared contract.
+- ❌ Not done: source-specific refresh scheduling/intervals.
+- ❌ Not done: plugin-owned detail rendering.
+
+Break remaining work into these sub-issues:
+
+- [ ] **#6A — Introduce an org plugin contract**
+  - Define a shared backend contract each org module must implement (base show projection,
+    scrape function, optional detail enrichment function, source id).
+  - Add a central registry so the scraper runner iterates plugins instead of hardcoding FIFe/TICA.
+
+- [ ] **#6B — Split storage into per-org blobs with independent schema versions**
+  - Replace single `catz-data.json` with separate org blobs (for example `catz-fife.json`,
+    `catz-tica.json`) plus shared caches where appropriate.
+  - Add idempotent migrations per org blob schema.
+  - Keep API response shape for `/api/shows` backward compatible.
+
+- [ ] **#6C — Enable source-scoped refresh and independent refresh cadence**
+  - Add source filter support to admin refresh flow (run one org or all).
+  - Track last-refresh metadata per source so different intervals can be configured later.
+  - Preserve current default behavior when no source filter is provided.
+
+- [ ] **#6D — Extract org-specific detail rendering into pluggable UI components**
+  - Keep shared list/map/calendar shell.
+  - Move org-specific detail snippets (show type/format, extra links, future ring/day fields) into
+    per-org renderers selected by source.
+  - Ensure unknown/future orgs degrade gracefully with base fields only.
 
 ---
 
@@ -96,7 +125,7 @@ on components that are still changing.
 |----------|-------|--------|------------|
 | 1 | #5 Country normalization | ✅ Done | — |
 | 2 | #7 + #13 TICA details & direct link | ✅ Done | — |
-| 3 | #6 TICA/FIFe separation | ✅ Done | #13 |
+| 3 | #6 TICA/FIFe separation | Partially complete (split into #6A–#6D) | #13 |
 | 4 | #14 Show format / show type | ✅ Done | #6 |
 | 5 | #8 External links | ✅ Done | #6 |
 | 6 | #9 Unit tests | ✅ Done | #6 (architecture stable) |
