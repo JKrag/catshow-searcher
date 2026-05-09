@@ -24,6 +24,14 @@ UI with map, calendar, and list views. See README.md for architecture overview.
 - Home address is persisted in `localStorage` (key: `catz.home`).
 - FIFe = blue, TICA = rose — consistent across badges, calendar cells, and map markers.
 
+## Tool usage
+
+Prefer built-in tools over Bash for file operations — they are cheaper on tokens:
+- Read a file → `Read` tool, not `cat` / `head` / `tail`
+- Edit a file → `Edit` or `Write` tool, not `sed` / `awk` / heredoc
+- Reserve `Bash` for things that genuinely need a shell: running the compiler,
+  git commands, package scripts, curl, grep across many files.
+
 ## Living documents — keep these up to date
 
 When you make changes, update the relevant files before committing:
