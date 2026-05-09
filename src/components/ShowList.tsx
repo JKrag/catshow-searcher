@@ -13,6 +13,21 @@ function formatDates(s: Show): string {
   return `${s.start_date} → ${s.end_date}`;
 }
 
+// Returns true if the venue string contains meaningful info beyond city + country.
+// Strips numbers (postal codes) before comparing so "Birkerød 3460, Birkerød, 3460, Denmark"
+// doesn't duplicate "Birkerød, Denmark", while "Sanford, Florida, United States" still
+// shows the state.
+function venueAddsInfo(venue: string, city: string | null, country: string | null): boolean {
+  // Keep only tokens with no digits — drops postal codes like "3460", "CV8", "2LG"
+  const words = (s: string) =>
+    new Set(s.toLowerCase().split(/[\s,]+/).filter((w) => w.length > 0 && !/\d/.test(w)));
+  const baseWords = words(`${city ?? ""} ${country ?? ""}`);
+  for (const w of words(venue)) {
+    if (!baseWords.has(w)) return true;
+  }
+  return false;
+}
+
 export function ShowList({ shows, homeSet }: Props) {
   if (shows.length === 0) {
     return (
@@ -69,7 +84,7 @@ export function ShowList({ shows, homeSet }: Props) {
                   <div className="text-foreground/90">
                     {[s.city, s.country].filter(Boolean).join(", ")}
                   </div>
-                  {s.venue && s.venue !== `${s.city}, ${s.country}` && (
+                  {s.venue && venueAddsInfo(s.venue, s.city, s.country) && (
                     <div className="text-xs text-muted-foreground truncate max-w-xs mt-0.5">
                       {s.venue}
                     </div>
