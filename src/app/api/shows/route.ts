@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getOrLoadStore } from "@/lib/store";
 import { listShows, distinctCountries } from "@/lib/shows-repo";
 import type { Org, ShowFilter } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
@@ -34,7 +36,8 @@ export async function GET(req: NextRequest) {
     };
   }
 
-  const shows = await listShows(filter);
-  const countries = await distinctCountries();
+  const store = await getOrLoadStore();
+  const shows = listShows(store, filter);
+  const countries = distinctCountries(store);
   return NextResponse.json({ shows, countries });
 }
