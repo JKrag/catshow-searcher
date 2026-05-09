@@ -1,6 +1,6 @@
 export type Org = "FIFe" | "TICA";
 
-export interface Show {
+interface BaseShow {
   id: number;
   source: Org;
   source_id: string;
@@ -17,7 +17,21 @@ export interface Show {
   scraped_at: string;
 }
 
-export interface NormalisedShow {
+export interface FifeShow extends BaseShow {
+  source: "FIFe";
+  show_type: string | null;
+}
+
+export interface TicaShow extends BaseShow {
+  source: "TICA";
+  show_format: string | null;
+  flyer_url: string | null;
+  detail_fetched: boolean;
+}
+
+export type Show = FifeShow | TicaShow;
+
+interface BaseNormalisedShow {
   source: Org;
   source_id: string;
   title: string;
@@ -31,6 +45,19 @@ export interface NormalisedShow {
   raw?: unknown;
 }
 
+export interface NormalisedFifeShow extends BaseNormalisedShow {
+  source: "FIFe";
+  show_type?: string | null;
+}
+
+export interface NormalisedTicaShow extends BaseNormalisedShow {
+  source: "TICA";
+  show_format?: string | null;
+  flyer_url?: string | null;
+}
+
+export type NormalisedShow = NormalisedFifeShow | NormalisedTicaShow;
+
 export interface ShowFilter {
   org?: Org[];
   country?: string[];
@@ -40,10 +67,10 @@ export interface ShowFilter {
   near?: { lat: number; lng: number; radius_km: number };
 }
 
-export interface ShowWithDistance extends Show {
+export type ShowWithDistance = Show & {
   distance_km?: number | null;
   duration_min?: number | null;
-}
+};
 
 export interface ScrapeRun {
   id: string;

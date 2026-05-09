@@ -1,4 +1,4 @@
-import type { NormalisedShow } from "../types";
+import type { NormalisedFifeShow } from "../types";
 
 const FIFE_ICAL =
   "https://fifeweb.org/events/list/?tribe_eventcategory%5B0%5D=8&ical=1";
@@ -104,14 +104,14 @@ export function parseICal(text: string): VEvent[] {
   return events;
 }
 
-export async function fetchFife(): Promise<NormalisedShow[]> {
+export async function fetchFife(): Promise<NormalisedFifeShow[]> {
   const res = await fetch(FIFE_ICAL, {
     headers: { "User-Agent": "catz/0.1 (cat-show finder)" },
   });
   if (!res.ok) throw new Error(`FIFe HTTP ${res.status}`);
   const text = await res.text();
   const events = parseICal(text);
-  const shows: NormalisedShow[] = [];
+  const shows: NormalisedFifeShow[] = [];
   for (const e of events) {
     if (!e.uid || !e.dtstart || !e.summary) continue;
     const start = parseDate(e.dtstart);
@@ -130,6 +130,7 @@ export async function fetchFife(): Promise<NormalisedShow[]> {
       start_date: start,
       end_date: end,
       url: e.url ?? null,
+      show_type: null,
       raw: e,
     });
   }

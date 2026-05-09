@@ -3,12 +3,14 @@ import type { CatzStore } from "../store";
 import {
   upsertShows,
   listShowsMissingGeocode,
+  listTicaShowsMissingDetail,
   setShowGeocode,
+  setTicaDetail,
 } from "../shows-repo";
 import { geocode } from "../geocode";
 import { fetchFife } from "./fife";
-import { fetchTica } from "./tica";
-import type { Org, ScrapeRun } from "../types";
+import { fetchTica, fetchTicaDetail } from "./tica";
+import type { NormalisedShow, Org, ScrapeRun } from "../types";
 
 export interface ScrapeOutcome {
   source: Org;
@@ -21,7 +23,7 @@ export interface ScrapeOutcome {
 
 async function runOne(
   source: Org,
-  fetcher: () => Promise<Awaited<ReturnType<typeof fetchFife>>>,
+  fetcher: () => Promise<NormalisedShow[]>,
   store: CatzStore,
   geocodeBudget: number,
 ): Promise<ScrapeOutcome> {
@@ -75,8 +77,32 @@ async function runOne(
   }
 }
 
+async function fetchTicaDetails(
+  store: CatzStore,
+  budget: number,
+): Promise<number> {
+  const pending = listTicaShowsMissingDetail(store, budget);
+  let fetched = 0;
+  for (const show of pending) {
+    try {
+      const detail = await fetchTicaDetail(show.source_id);
+      setTicaDetail(store, show.source_id, detail.show_format, detail.flyer_url);
+      fetched++;
+    } catch (e) {
+      console.warn(`TICA detail fetch failed for ${show.source_id}:`, e);
+      // Mark as fetched even on error to avoid infinite retry loops
+      setTicaDetail(store, show.source_id, null, null);
+    }
+    // Rate limit — same courtesy as geocoding
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  if (fetched > 0) console.log(`TICA details fetched: ${fetched}`);
+  return fetched;
+}
+
 export async function runAllScrapers(
   geocodeBudget = 80,
+  ticaDetailBudget = 30,
 ): Promise<ScrapeOutcome[]> {
   const existing = (await readStore()) ?? { ...EMPTY_STORE };
   const store: CatzStore = {
@@ -89,6 +115,9 @@ export async function runAllScrapers(
   // Sequential — Nominatim is 1 req/sec; parallel runs cause 429s
   const fife = await runOne("FIFe", fetchFife, store, geocodeBudget);
   const tica = await runOne("TICA", fetchTica, store, geocodeBudget);
+
+  // Batch-fetch TICA show details (show_format, flyer_url) for shows not yet fetched
+  await fetchTicaDetails(store, ticaDetailBudget);
 
   store.updated_at = new Date().toISOString();
   try {

@@ -1,5 +1,5 @@
 import { parse, type HTMLElement } from "node-html-parser";
-import type { NormalisedShow } from "../types";
+import type { NormalisedTicaShow } from "../types";
 
 const TICA_URL = "https://shows.tica.org/en/component/toes/shows";
 
@@ -52,12 +52,12 @@ function parseAddress(addr: string): {
   return { city, country, full: addr };
 }
 
-export function parseTica(html: string): NormalisedShow[] {
+export function parseTica(html: string): NormalisedTicaShow[] {
   const root = parse(html);
   const list = root.querySelector(".show-list");
   if (!list) return [];
 
-  const shows: NormalisedShow[] = [];
+  const shows: NormalisedTicaShow[] = [];
   let currentMonth: { year: number; month: number } | null = null;
 
   for (const child of list.childNodes) {
@@ -114,7 +114,7 @@ export function parseTica(html: string): NormalisedShow[] {
   return shows;
 }
 
-export async function fetchTica(): Promise<NormalisedShow[]> {
+export async function fetchTica(): Promise<NormalisedTicaShow[]> {
   const res = await fetch(TICA_URL, {
     headers: { "User-Agent": "catz/0.1 (cat-show finder)" },
   });

@@ -58,6 +58,12 @@ export function ShowList({ shows, homeSet }: Props) {
                   {s.club && s.club !== s.title && (
                     <div className="text-xs text-muted-foreground mt-0.5">{s.club}</div>
                   )}
+                  {s.source === "FIFe" && s.show_type && (
+                    <div className="text-xs text-muted-foreground mt-0.5 italic">{s.show_type}</div>
+                  )}
+                  {s.source === "TICA" && s.show_format && (
+                    <div className="text-xs text-muted-foreground mt-0.5 italic">{s.show_format}</div>
+                  )}
                 </td>
                 <td className="py-3 px-3">
                   <div className="text-foreground/90">
@@ -88,17 +94,30 @@ export function ShowList({ shows, homeSet }: Props) {
                   </td>
                 )}
                 <td className="py-3 px-4">
-                  {s.url && (
-                    <a
-                      href={s.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Open source page"
-                      className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground hover:text-[var(--primary)] hover:bg-[var(--primary)]/10 transition"
-                    >
-                      ↗
-                    </a>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {s.url && (
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Open source page"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground hover:text-[var(--primary)] hover:bg-[var(--primary)]/10 transition"
+                      >
+                        ↗
+                      </a>
+                    )}
+                    {s.source === "TICA" && s.flyer_url && (
+                      <a
+                        href={s.flyer_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Flyer / club website"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground hover:text-[var(--tica)] hover:bg-[var(--tica)]/10 transition text-[10px] font-semibold"
+                      >
+                        📄
+                      </a>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
