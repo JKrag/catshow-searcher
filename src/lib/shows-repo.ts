@@ -1,5 +1,5 @@
 import type { CatzStore } from "./store";
-import type { NormalisedShow, Show, ShowFilter } from "./types";
+import type { FifeShow, NormalisedShow, Show, ShowFilter, TicaShow } from "./types";
 import { normalizeCountry } from "./normalize-country";
 
 export function upsertShows(
@@ -14,37 +14,71 @@ export function upsertShows(
     const idx = store.shows.findIndex(
       (s) => s.source === r.source && s.source_id === r.source_id,
     );
+
+    const commonFields = {
+      title: r.title,
+      club: r.club ?? null,
+      country: normalizeCountry(r.country),
+      city: r.city ?? null,
+      venue: r.venue ?? null,
+      start_date: r.start_date,
+      end_date: r.end_date,
+      url: r.url ?? null,
+      scraped_at: new Date().toISOString(),
+    };
+
     if (idx >= 0) {
-      store.shows[idx] = {
-        ...store.shows[idx],
-        title: r.title,
-        club: r.club ?? null,
-        country: normalizeCountry(r.country),
-        city: r.city ?? null,
-        venue: r.venue ?? null,
-        start_date: r.start_date,
-        end_date: r.end_date,
-        url: r.url ?? null,
-        scraped_at: new Date().toISOString(),
-      };
+      const existing = store.shows[idx];
+      if (r.source === "FIFe") {
+        // Preserve detail fields fetched separately — scraper output never carries them
+        const ex = existing as FifeShow;
+        store.shows[idx] = {
+          ...ex,
+          ...commonFields,
+          source: "FIFe",
+          show_type: ex.show_type,
+          website_url: ex.website_url,
+          detail_fetched: ex.detail_fetched,
+        };
+      } else {
+        // Preserve detail fields fetched separately — scraper output never carries them
+        const ex = existing as TicaShow;
+        store.shows[idx] = {
+          ...ex,
+          ...commonFields,
+          source: "TICA",
+          show_format: ex.show_format,
+          flyer_url: ex.flyer_url,
+          detail_fetched: ex.detail_fetched,
+        };
+      }
       updated++;
     } else {
-      store.shows.push({
-        id: nextId++,
-        source: r.source,
-        source_id: r.source_id,
-        title: r.title,
-        club: r.club ?? null,
-        country: normalizeCountry(r.country),
-        city: r.city ?? null,
-        venue: r.venue ?? null,
-        start_date: r.start_date,
-        end_date: r.end_date,
-        lat: null,
-        lng: null,
-        url: r.url ?? null,
-        scraped_at: new Date().toISOString(),
-      });
+      if (r.source === "FIFe") {
+        store.shows.push({
+          id: nextId++,
+          source: "FIFe",
+          source_id: r.source_id,
+          ...commonFields,
+          lat: null,
+          lng: null,
+          show_type: null,
+          website_url: null,
+          detail_fetched: false,
+        });
+      } else {
+        store.shows.push({
+          id: nextId++,
+          source: "TICA",
+          source_id: r.source_id,
+          ...commonFields,
+          lat: null,
+          lng: null,
+          show_format: null,
+          flyer_url: null,
+          detail_fetched: false,
+        });
+      }
       inserted++;
     }
   }
@@ -62,6 +96,38 @@ export function setShowGeocode(
   if (show) {
     show.lat = lat;
     show.lng = lng;
+  }
+}
+
+export function setFifeDetail(
+  store: CatzStore,
+  sourceId: string,
+  show_type: string | null,
+  website_url: string | null,
+) {
+  const show = store.shows.find(
+    (s) => s.source === "FIFe" && s.source_id === sourceId,
+  ) as FifeShow | undefined;
+  if (show) {
+    show.show_type = show_type;
+    show.website_url = website_url;
+    show.detail_fetched = true;
+  }
+}
+
+export function setTicaDetail(
+  store: CatzStore,
+  sourceId: string,
+  show_format: string | null,
+  flyer_url: string | null,
+) {
+  const show = store.shows.find(
+    (s) => s.source === "TICA" && s.source_id === sourceId,
+  ) as TicaShow | undefined;
+  if (show) {
+    show.show_format = show_format;
+    show.flyer_url = flyer_url;
+    show.detail_fetched = true;
   }
 }
 
@@ -106,6 +172,20 @@ export function listShows(store: CatzStore, filter: ShowFilter = {}): Show[] {
 export function listShowsMissingGeocode(store: CatzStore, limit = 50): Show[] {
   return store.shows
     .filter((s) => s.lat == null || s.lng == null)
+    .sort((a, b) => a.start_date.localeCompare(b.start_date))
+    .slice(0, limit);
+}
+
+export function listFifeShowsMissingDetail(store: CatzStore, limit = 30): FifeShow[] {
+  return store.shows
+    .filter((s): s is FifeShow => s.source === "FIFe" && !(s as FifeShow).detail_fetched && s.url != null)
+    .sort((a, b) => a.start_date.localeCompare(b.start_date))
+    .slice(0, limit);
+}
+
+export function listTicaShowsMissingDetail(store: CatzStore, limit = 30): TicaShow[] {
+  return store.shows
+    .filter((s): s is TicaShow => s.source === "TICA" && !(s as TicaShow).detail_fetched)
     .sort((a, b) => a.start_date.localeCompare(b.start_date))
     .slice(0, limit);
 }

@@ -13,6 +13,21 @@ function formatDates(s: Show): string {
   return `${s.start_date} → ${s.end_date}`;
 }
 
+// Returns true if the venue string contains meaningful info beyond city + country.
+// Strips numbers (postal codes) before comparing so "Birkerød 3460, Birkerød, 3460, Denmark"
+// doesn't duplicate "Birkerød, Denmark", while "Sanford, Florida, United States" still
+// shows the state.
+function venueAddsInfo(venue: string, city: string | null, country: string | null): boolean {
+  // Keep only tokens with no digits — drops postal codes like "3460", "CV8", "2LG"
+  const words = (s: string) =>
+    new Set(s.toLowerCase().split(/[\s,]+/).filter((w) => w.length > 0 && !/\d/.test(w)));
+  const baseWords = words(`${city ?? ""} ${country ?? ""}`);
+  for (const w of words(venue)) {
+    if (!baseWords.has(w)) return true;
+  }
+  return false;
+}
+
 export function ShowList({ shows, homeSet }: Props) {
   if (shows.length === 0) {
     return (
@@ -58,12 +73,18 @@ export function ShowList({ shows, homeSet }: Props) {
                   {s.club && s.club !== s.title && (
                     <div className="text-xs text-muted-foreground mt-0.5">{s.club}</div>
                   )}
+                  {s.source === "FIFe" && s.show_type && (
+                    <div className="text-xs text-muted-foreground mt-0.5 italic">{s.show_type}</div>
+                  )}
+                  {s.source === "TICA" && s.show_format && (
+                    <div className="text-xs text-muted-foreground mt-0.5 italic">{s.show_format}</div>
+                  )}
                 </td>
                 <td className="py-3 px-3">
                   <div className="text-foreground/90">
                     {[s.city, s.country].filter(Boolean).join(", ")}
                   </div>
-                  {s.venue && s.venue !== `${s.city}, ${s.country}` && (
+                  {s.venue && venueAddsInfo(s.venue, s.city, s.country) && (
                     <div className="text-xs text-muted-foreground truncate max-w-xs mt-0.5">
                       {s.venue}
                     </div>
@@ -88,17 +109,41 @@ export function ShowList({ shows, homeSet }: Props) {
                   </td>
                 )}
                 <td className="py-3 px-4">
-                  {s.url && (
-                    <a
-                      href={s.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Open source page"
-                      className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground hover:text-[var(--primary)] hover:bg-[var(--primary)]/10 transition"
-                    >
-                      ↗
-                    </a>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {s.url && (
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Open source page"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground hover:text-[var(--primary)] hover:bg-[var(--primary)]/10 transition"
+                      >
+                        ↗
+                      </a>
+                    )}
+                    {s.source === "FIFe" && s.website_url && (
+                      <a
+                        href={s.website_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Club website"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground hover:text-[var(--fife)] hover:bg-[var(--fife)]/10 transition text-[10px] font-semibold"
+                      >
+                        🌐
+                      </a>
+                    )}
+                    {s.source === "TICA" && s.flyer_url && (
+                      <a
+                        href={s.flyer_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Flyer / club website"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground hover:text-[var(--tica)] hover:bg-[var(--tica)]/10 transition text-[10px] font-semibold"
+                      >
+                        📄
+                      </a>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

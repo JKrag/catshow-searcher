@@ -1,4 +1,4 @@
-import type { NormalisedShow } from "../types";
+import type { NormalisedFifeShow } from "../types";
 
 const FIFE_ICAL =
   "https://fifeweb.org/events/list/?tribe_eventcategory%5B0%5D=8&ical=1";
@@ -104,14 +104,14 @@ export function parseICal(text: string): VEvent[] {
   return events;
 }
 
-export async function fetchFife(): Promise<NormalisedShow[]> {
+export async function fetchFife(): Promise<NormalisedFifeShow[]> {
   const res = await fetch(FIFE_ICAL, {
     headers: { "User-Agent": "catz/0.1 (cat-show finder)" },
   });
   if (!res.ok) throw new Error(`FIFe HTTP ${res.status}`);
   const text = await res.text();
   const events = parseICal(text);
-  const shows: NormalisedShow[] = [];
+  const shows: NormalisedFifeShow[] = [];
   for (const e of events) {
     if (!e.uid || !e.dtstart || !e.summary) continue;
     const start = parseDate(e.dtstart);
@@ -130,10 +130,36 @@ export async function fetchFife(): Promise<NormalisedShow[]> {
       start_date: start,
       end_date: end,
       url: e.url ?? null,
+      show_type: null,
       raw: e,
     });
   }
   return shows;
+}
+
+export interface FifeShowDetail {
+  show_type: string | null;
+  website_url: string | null;
+}
+
+export function parseFifeDetail(html: string): FifeShowDetail {
+  const typeMatch = html.match(/Show type\s*<\/dt>\s*<dd class="tribe-meta-value">\s*([\s\S]*?)\s*<\/dd>/);
+  const show_type = typeMatch ? typeMatch[1].trim() || null : null;
+
+  const organizerMatch = html.match(/"organizer":\{[^}]*"url":"([^"]+)"/);
+  const rawUrl = organizerMatch ? organizerMatch[1] : null;
+  const website_url =
+    rawUrl && rawUrl !== "" && !rawUrl.includes("fifeweb.org") ? rawUrl : null;
+
+  return { show_type, website_url };
+}
+
+export async function fetchFifeDetail(eventUrl: string): Promise<FifeShowDetail> {
+  const res = await fetch(eventUrl, {
+    headers: { "User-Agent": "catz/0.1 (cat-show finder)" },
+  });
+  if (!res.ok) throw new Error(`FIFe detail HTTP ${res.status} for ${eventUrl}`);
+  return parseFifeDetail(await res.text());
 }
 
 function subtractOneDay(end: string, fallback: string): string {

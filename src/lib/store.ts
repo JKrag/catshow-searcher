@@ -81,15 +81,28 @@ export function isStale(store: CatzStore): boolean {
   return Date.now() - new Date(store.updated_at).getTime() > STORE_TTL_MS;
 }
 
-// Re-runs normalizeCountry on all existing shows — fixes data written before
-// normalization was deployed. Returns true if anything changed.
-function migrateCountries(store: CatzStore): boolean {
+// Applies all schema migrations in one pass. Returns true if anything changed.
+// Uses Record<string, unknown> casts for org-specific fields because old blobs
+// won't have those keys — TypeScript's `in` guard would narrow to `never` here.
+function migrateStore(store: CatzStore): boolean {
   let changed = false;
   for (const show of store.shows) {
+    // Country normalization — fixes data written before normalization was deployed
     const normalized = normalizeCountry(show.country);
     if (normalized !== show.country) {
       show.country = normalized;
       changed = true;
+    }
+    // Org-specific fields added in #6 — backfill missing keys from old blobs
+    const raw = show as unknown as Record<string, unknown>;
+    if (show.source === "FIFe") {
+      if (raw["show_type"] === undefined) { raw["show_type"] = null; changed = true; }
+      if (raw["website_url"] === undefined) { raw["website_url"] = null; changed = true; }
+      if (raw["detail_fetched"] === undefined) { raw["detail_fetched"] = false; changed = true; }
+    } else if (show.source === "TICA") {
+      if (raw["show_format"] === undefined) { raw["show_format"] = null; changed = true; }
+      if (raw["flyer_url"] === undefined) { raw["flyer_url"] = null; changed = true; }
+      if (raw["detail_fetched"] === undefined) { raw["detail_fetched"] = false; changed = true; }
     }
   }
   return changed;
@@ -109,7 +122,7 @@ export async function getOrLoadStore(): Promise<CatzStore> {
     return (await readStore()) ?? { ...EMPTY_STORE };
   }
 
-  const migrated = migrateCountries(stored);
+  const migrated = migrateStore(stored);
   _cachedStore = stored;
   if (migrated) void writeStore(stored);
 
