@@ -2,17 +2,26 @@
 
 ## Phase 1 — Quick wins & data quality
 
-### #5 Country normalization
-Standalone fix with no dependencies. Country strings returned from scrapers need to be
-normalized so each country only appears once in the filter (e.g. "Danmark" / "DanmarkRegional"
-/ "Denmark" → one canonical entry). Likely a normalization step in the scraper or DB query.
+### #5 Country normalization ✅
+Done. `src/lib/normalize-country.ts` — strips TICA's `Regional`/`Region` suffix and maps
+~25 non-English country names to English canonical forms. Applied in `upsertShows` so it
+covers all orgs automatically.
 
-### #7 + #13 — TICA direct link & show detail fetching (together)
-These are tightly coupled. #13 ("figure out how to fetch more show details") is the
-investigation that unblocks #7 ("grab the per-show direct URL"). Do them as one piece of
-work: explore the TICA show detail API/page, extract the direct link (e.g.
-`https://shows.tica.org/en/component/toes/shows#show3129`), and document what other fields
-are available for later phases.
+**Deferred:** The alias table is static and silently passes through unknown strings. Extend
+it whenever a new non-English or oddly-formatted country appears in scraped data.
+
+### #7 + #13 — TICA direct link & show detail fetching ✅
+Done. URL fixed to `shows#show{id}` format. `parseTicaDetail()` / `fetchTicaDetail()`
+implemented in `src/lib/scrapers/tica.ts`.
+
+**Deferred:** Detail fetching is not yet wired into the main scrape. The functions are ready;
+wire them up as part of #14 (show format) and #8 (external links) after the #6 architecture
+split. Key facts to remember when doing that:
+- Detail endpoint: `GET /index.php?option=com_toes&view=show&layout=short&id={id}&tmpl=component`
+  (follows a redirect; needs browser-like User-Agent + `Referer: https://shows.tica.org/en/component/toes/shows`)
+- ~135 shows on the calendar — treat like geocoding (batch job, not inline per-scrape)
+- Available fields: `show_format` (e.g. "Alternative"), `flyer_url` (club website/flyer link)
+- Flyer URLs are real and populated for European shows (Danish, Dutch, UK shows confirmed)
 
 ---
 
@@ -21,11 +30,12 @@ are available for later phases.
 ### #6 — Separate TICA/FIFe handling
 Architectural refactor. Must happen before adding more org-specific fields — doing it after
 would require refactoring those additions too. The right timing is after the TICA extended
-fields are understood (#13 done) but before they are added in earnest.
+fields are understood (#13 done, ✅) but before they are added in earnest.
 
 Suggested breakdown:
 1. Split the JSON store into `fife.json` / `tica.json` with a shared base schema
-2. Define per-org extended fields (informed by #13/#14 research)
+2. Define per-org extended fields: TICA gets `show_format`, `flyer_url` (infrastructure
+   already in `tica.ts`); FIFe gets equivalent fields sourced from the iCal summary
 3. Standardize the "plugin" API surface (what each scraper must expose)
 4. Per-org detail view rendering
 
@@ -34,14 +44,20 @@ Suggested breakdown:
 ## Phase 3 — Data enrichment
 
 ### #14 — Show format / show type field
-With the type system separated, add `showFormat`/`showType` to both scrapers and surface it
-in the list view and map popups. FIFe shows have a "Show type" line (e.g. "Two 1 day, 2
-cert."); TICA shows have an equivalent "Show format" field.
+With the type system separated, add `show_format` to both scrapers and surface it in the list
+view and map popups. FIFe shows have a "Show type" line (e.g. "Two 1 day, 2 cert."); TICA
+shows have an equivalent "Show format" field (e.g. "Alternative").
+
+**For TICA:** call `fetchTicaDetail()` (already implemented in `tica.ts`) as a batch step
+after the main scrape, the same way geocoding works — only fetch for shows that are missing
+`show_format`. Wire result into the per-org extended schema defined in #6.
 
 ### #8 — External links (flyer / show website)
 Most shows link out to a club flyer or website in their detail view. Grab this during scraping
-and surface it in the UI. Depends on understanding TICA detail fetching (#13) and on the
-extended schema existing (#6).
+and surface it in the UI. Depends on the extended schema existing (#6).
+
+**For TICA:** `flyer_url` is already parsed by `parseTicaDetail()` — just needs to be stored
+and displayed. European shows confirmed to have real URLs (Danish, Dutch, UK shows tested).
 
 ---
 
