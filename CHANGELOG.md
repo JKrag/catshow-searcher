@@ -4,6 +4,22 @@ Brief record of significant changes. Newest first. Each entry covers a PR or log
 
 ---
 
+## commit bbe8d60 — Unit tests (#9)
+
+**Vitest setup** (`vitest.config.ts`, `package.json`)
+- `npm test` — one-shot run; `npm run test:watch` — watch mode
+- Node environment, `@/*` alias mirrors tsconfig
+
+**Test coverage** (43 tests across 4 files)
+- `parseICal` + `parseFifeDetail` — iCal parsing, line unfolding, optional fields, detail extraction
+- `parseTica` + `parseTicaDetail` — HTML parsing, month-boundary date ranges, single-day shows
+- `normalizeCountry` — aliases, suffix stripping, case-insensitivity, kanji, unknown pass-through
+- `upsertShows` — insert/update/mixed batch, **detail-field preservation on re-scrape** (both orgs),
+  country normalization, ID auto-increment; plus `setFifeDetail`, `setTicaDetail`,
+  `listFifeShowsMissingDetail`, `listTicaShowsMissingDetail`
+
+---
+
 ## PR #17 — Org separation + show detail fetching
 
 **Type system split** (`src/lib/types.ts`)

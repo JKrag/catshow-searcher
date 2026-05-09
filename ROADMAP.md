@@ -51,12 +51,16 @@ Both links appear in the list view alongside the source ↗ link.
 
 ## Phase 4 — Quality gates
 
-### #9 — Unit tests
-Best added now that the architecture has settled. Focus on:
-- Scrapers (pure parse functions — `parseFifeDetail`, `parseTicaDetail`, `parseTica`,
-  `parseICal`)
-- Country normalization (`normalizeCountry`)
-- `upsertShows` — especially the "preserve detail fields on update" behaviour
+### #9 — Unit tests ✅
+Done. Vitest with node environment and `@/*` alias. Run with `npm test` (one-shot) or
+`npm run test:watch` (watch mode). 43 tests across 4 files:
+- `src/lib/scrapers/__tests__/fife.test.ts` — `parseICal`, `parseFifeDetail`
+- `src/lib/scrapers/__tests__/tica.test.ts` — `parseTica`, `parseTicaDetail`
+- `src/lib/__tests__/normalize-country.test.ts` — `normalizeCountry`
+- `src/lib/__tests__/shows-repo.test.ts` — `upsertShows`, `setFifeDetail`, `setTicaDetail`,
+  `listFifeShowsMissingDetail`, `listTicaShowsMissingDetail`
+
+Tests cover the critical "preserve detail fields on update" path in `upsertShows`.
 
 ### #10 — CI pipeline (GitHub Actions)
 Comes after #9 — no point wiring up CI before tests exist. Add lint + test + build checks.
@@ -94,7 +98,7 @@ on components that are still changing.
 | 3 | #6 TICA/FIFe separation | ✅ Done | #13 |
 | 4 | #14 Show format / show type | ✅ Done | #6 |
 | 5 | #8 External links | ✅ Done | #6 |
-| 6 | #9 Unit tests | Next | #6 (architecture stable) |
+| 6 | #9 Unit tests | ✅ Done | #6 (architecture stable) |
 | 7 | #10 CI pipeline | Pending | #9 |
 | 8 | #11 Redesign epic | Pending | design doc first |
 | 9 | #12 Internationalization | Pending | #11 (UI stable) |

@@ -24,6 +24,22 @@ UI with map, calendar, and list views. See README.md for architecture overview.
 - Home address is persisted in `localStorage` (key: `catz.home`).
 - FIFe = blue, TICA = rose — consistent across badges, calendar cells, and map markers.
 
+## Testing
+
+Run the test suite before committing any change to the logic layer:
+
+```
+npm test            # one-shot (use in CI and before commits)
+npm run test:watch  # watch mode for TDD
+```
+
+Tests live in `src/**/__tests__/`. The four test files cover the pure-function core:
+`parseICal`, `parseFifeDetail`, `parseTica`, `parseTicaDetail`, `normalizeCountry`,
+and `upsertShows` (including the critical "preserve detail fields on update" path).
+
+When adding new pure functions to scrapers, `normalize-country.ts`, or `shows-repo.ts`,
+add matching tests. Tests for Next.js API routes and React components are not yet set up.
+
 ## Tool usage
 
 Prefer built-in tools over Bash for file operations — they are cheaper on tokens:
