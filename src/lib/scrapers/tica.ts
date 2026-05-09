@@ -106,7 +106,7 @@ export function parseTica(html: string): NormalisedShow[] {
         venue: loc.full || null,
         start_date,
         end_date,
-        url: `https://shows.tica.org/en/component/toes/show?id=${sourceId}`,
+        url: `https://shows.tica.org/en/component/toes/shows#show${sourceId}`,
         raw: { address, club, date: dateEl.text.trim() },
       });
     }
@@ -121,4 +121,39 @@ export async function fetchTica(): Promise<NormalisedShow[]> {
   if (!res.ok) throw new Error(`TICA HTTP ${res.status}`);
   const html = await res.text();
   return parseTica(html);
+}
+
+// Detail data available from the TICA show detail endpoint.
+// Wire up during #14 (show format) and #8 (external links) after the #6 architecture split.
+export interface TicaShowDetail {
+  show_format: string | null;
+  flyer_url: string | null;
+}
+
+const DETAIL_BASE =
+  "https://shows.tica.org/index.php?option=com_toes&view=show&layout=short&tmpl=component";
+
+export function parseTicaDetail(html: string): TicaShowDetail {
+  const formatMatch = html.match(/Show Format\s*<\/label>\s*<span>\s*([\s\S]*?)\s*<\/span>/);
+  const show_format = formatMatch ? formatMatch[1].trim() || null : null;
+
+  const flyerMatch = html.match(/class="flyer"[\s\S]*?href="([^"]+)"/);
+  const flyerRaw = flyerMatch ? flyerMatch[1] : null;
+  const flyer_url =
+    flyerRaw && flyerRaw !== "http://" && flyerRaw !== "https://" ? flyerRaw : null;
+
+  return { show_format, flyer_url };
+}
+
+export async function fetchTicaDetail(sourceId: string): Promise<TicaShowDetail> {
+  const url = `${DETAIL_BASE}&id=${sourceId}`;
+  const res = await fetch(url, {
+    redirect: "follow",
+    headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; catz/0.1)",
+      Referer: TICA_URL,
+    },
+  });
+  if (!res.ok) throw new Error(`TICA detail HTTP ${res.status} for id=${sourceId}`);
+  return parseTicaDetail(await res.text());
 }
