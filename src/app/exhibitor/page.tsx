@@ -128,11 +128,6 @@ export default function ExhibitorPage() {
                   <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse" />
                   Loading…
                 </>
-              ) : visible.length === annotated.length ? (
-                <>
-                  <span className="font-semibold text-foreground">{visible.length}</span>{" "}
-                  show{visible.length === 1 ? "" : "s"}
-                </>
               ) : (
                 <>
                   <span className="font-semibold text-foreground">{visible.length}</span>
