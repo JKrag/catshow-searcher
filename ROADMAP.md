@@ -73,7 +73,7 @@ Done. GitHub Actions workflow triggers on pull_request to main. Runs `npm ci` + 
 ### #11 — Redesign for user groups (Epic) ✅
 Done. Three URL-based persona routes implemented:
 
-- `/` — **Visitor**: map default, minimal sidebar (date + country + distance, 50 km default, 500 km max, "Show all" checkbox), no org/search filters
+- `/` — **Visitor**: map default, minimal sidebar (date + country + distance, 200 km default, 500 km max, "Show all" checkbox), no org/search filters
 - `/exhibitor` — **Exhibitor**: full sidebar with all 5 sections, list default, show_type/format/links all shown
 - `/organizer` — **Organizer**: stub with "Timeline view coming soon" placeholder
 

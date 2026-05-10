@@ -13,6 +13,11 @@ export type RouteEntry = { distance_km: number; duration_min: number };
 export function useRoutes(shows: Show[], home: HomeAddress | null) {
   const [routes, setRoutes] = useState<Record<number, RouteEntry>>({});
 
+  // Reset cached routes whenever the origin changes so distances don't go stale.
+  useEffect(() => {
+    setRoutes({});
+  }, [home?.lat, home?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!home || shows.length === 0) return;
     const dests = shows

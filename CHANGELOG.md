@@ -22,7 +22,7 @@ Brief record of significant changes. Newest first. Each entry covers a PR or log
 - `src/app/organizer/page.tsx` — organizer stub
 
 **Modified components**
-- `FilterSidebar`: `variant="visitor"` hides Organisation + Search sections; visitor distance slider capped at 500 km with "Show all" checkbox; `defaultVisitorFilters` exported with `maxDistanceKm: 50`
+- `FilterSidebar`: `variant="visitor"` hides Organisation + Search sections; visitor distance slider capped at 500 km with "Show all" checkbox; `defaultVisitorFilters` exported with `maxDistanceKm: 200`
 - `ShowList`: `variant="visitor"` hides show_type/show_format rows; external links (↗ / 🌐 / 📄) kept in both variants
 - `src/app/layout.tsx`: `<PersonaNav />` added above `{children}`
 - `src/app/page.tsx`: rewritten as visitor page (map default, visitor sidebar/list variants)

@@ -42,11 +42,11 @@ export default function ExhibitorPage() {
   }, [shows, routes, home]);
 
   const visible = useMemo(() => {
-    if (!filters.maxDistanceKm) return annotated;
+    if (!home || !filters.maxDistanceKm) return annotated;
     return annotated.filter(
       (s) => s.distance_km != null && s.distance_km <= filters.maxDistanceKm!,
     );
-  }, [annotated, filters.maxDistanceKm]);
+  }, [annotated, filters.maxDistanceKm, home]);
 
   const sorted = useMemo(() => {
     if (!home || !filters.maxDistanceKm) {

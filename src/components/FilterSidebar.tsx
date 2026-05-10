@@ -249,59 +249,57 @@ export function FilterSidebar({ filters, onChange, countries, homeSet, variant =
           </section>
         ) : (
           <section className="p-4">
-            <div className="flex items-center justify-between mb-2.5">
-              <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
-                Max driving distance
-              </h3>
-              {homeSet && filters.maxDistanceKm != null && (
-                <button
-                  type="button"
-                  onClick={() => onChange({ ...filters, maxDistanceKm: null })}
-                  className="text-[11px] text-[var(--primary)] hover:underline"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
+            <h3 className="font-semibold mb-2.5 text-xs uppercase tracking-wider text-muted-foreground">
+              Max driving distance
+            </h3>
             {!homeSet ? (
-              <p className="text-muted-foreground mb-1.5 text-xs">
-                Set a home address to use this.
+              <p className="text-muted-foreground text-xs">
+                Set a home address to filter by distance.
               </p>
             ) : (
               <>
-                <div className="flex items-baseline justify-between mb-2">
-                  <span className="text-sm font-semibold tabular-nums text-foreground">
-                    {filters.maxDistanceKm
-                      ? `≤ ${filters.maxDistanceKm.toLocaleString()} km`
-                      : "Any distance"}
-                  </span>
-                  <span className="text-[11px] text-muted-foreground tabular-nums">
-                    50 – 3000 km
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={50}
-                  max={3000}
-                  step={50}
-                  value={filters.maxDistanceKm ?? 3000}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    onChange({
-                      ...filters,
-                      maxDistanceKm: v >= 3000 ? null : v,
-                    });
-                  }}
-                  aria-label="Maximum driving distance in kilometres"
-                  className="w-full accent-[var(--primary)] cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] text-muted-foreground/70 mt-1 px-0.5 tabular-nums">
-                  <span>50</span>
-                  <span>500</span>
-                  <span>1000</span>
-                  <span>2000</span>
-                  <span>∞</span>
-                </div>
+                <label className="flex items-center gap-2 mb-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showAll}
+                    onChange={() =>
+                      onChange({ ...filters, maxDistanceKm: showAll ? 500 : null })
+                    }
+                    className="accent-[var(--primary)]"
+                  />
+                  <span className="text-sm">Show all distances</span>
+                </label>
+                {!showAll && (
+                  <>
+                    <div className="flex items-baseline justify-between mb-2">
+                      <span className="text-sm font-semibold tabular-nums text-foreground">
+                        ≤ {filters.maxDistanceKm?.toLocaleString()} km
+                      </span>
+                      <span className="text-[11px] text-muted-foreground tabular-nums">
+                        50 – 3000 km
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={50}
+                      max={3000}
+                      step={50}
+                      value={filters.maxDistanceKm ?? 500}
+                      onChange={(e) =>
+                        onChange({ ...filters, maxDistanceKm: Number(e.target.value) })
+                      }
+                      aria-label="Maximum driving distance in kilometres"
+                      className="w-full accent-[var(--primary)] cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[10px] text-muted-foreground/70 mt-1 px-0.5 tabular-nums">
+                      <span>50</span>
+                      <span>500</span>
+                      <span>1000</span>
+                      <span>2000</span>
+                      <span>3000</span>
+                    </div>
+                  </>
+                )}
               </>
             )}
           </section>
