@@ -137,7 +137,7 @@ export function FilterSidebar({ filters, onChange, countries, homeSet, variant =
             </div>
             {filters.judgeQ && (
               <p className="text-[11px] text-muted-foreground mt-1.5">
-                Filters TICA shows with confirmed judge assignments.
+                Only TICA shows with a confirmed match are shown.
               </p>
             )}
           </section>

@@ -50,12 +50,9 @@ export default function ExhibitorPage() {
     }
     if (filters.judgeQ) {
       const q = filters.judgeQ.toLowerCase();
-      result = result.filter((s) => {
-        if (s.source !== "TICA") return false;
-        // Pass through shows where judge data isn't fetched yet; exclude those with confirmed judges that don't match
-        if (!s.judges) return true;
-        return s.judges.some((j) => j.toLowerCase().includes(q));
-      });
+      result = result.filter(
+        (s) => s.source === "TICA" && s.judges?.some((j) => j.toLowerCase().includes(q)),
+      );
     }
     return result;
   }, [annotated, filters.maxDistanceKm, filters.judgeQ, home]);
