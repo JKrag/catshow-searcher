@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FilterSidebar, defaultVisitorFilters, type Filters } from "@/components/FilterSidebar";
+import { FilterSidebar, defaultFilters, type Filters } from "@/components/FilterSidebar";
 import { HomeAddressInput } from "@/components/HomeAddressInput";
 import { ShowList } from "@/components/ShowList";
 import { ShowCalendar } from "@/components/ShowCalendar";
@@ -14,18 +14,17 @@ import type { ShowWithDistance } from "@/lib/types";
 
 type View = "list" | "calendar" | "map";
 
-export default function VisitorPage() {
-  const [filters, setFilters] = useState<Filters>(defaultVisitorFilters);
-  const [view, setView] = useState<View>("map");
+export default function ExhibitorPage() {
+  const [filters, setFilters] = useState<Filters>(defaultFilters);
+  const [view, setView] = useState<View>("list");
   const [home] = useHome();
+
+  const { shows, countries, loading } = useShows(filters);
+  const routes = useRoutes(shows, home);
 
   // TODO(prefill-country): when home is set on first load and the user has
   // no countries selected, prefill `filters.countries` from
   // `homeCountryAliases(home.display_name)` (see src/components/home.ts).
-  // Use the `ready` flag from useHome() to wait for localStorage hydration.
-
-  const { shows, countries, loading } = useShows(filters);
-  const routes = useRoutes(shows, home);
 
   const annotated: ShowWithDistance[] = useMemo(() => {
     return shows.map((s) => {
@@ -42,13 +41,12 @@ export default function VisitorPage() {
     });
   }, [shows, routes, home]);
 
-  // Distance filter only applies once a home is set; without it all shows are visible.
   const visible = useMemo(() => {
-    if (!home || !filters.maxDistanceKm) return annotated;
+    if (!filters.maxDistanceKm) return annotated;
     return annotated.filter(
       (s) => s.distance_km != null && s.distance_km <= filters.maxDistanceKm!,
     );
-  }, [annotated, filters.maxDistanceKm, home]);
+  }, [annotated, filters.maxDistanceKm]);
 
   const sorted = useMemo(() => {
     if (!home || !filters.maxDistanceKm) {
@@ -86,7 +84,6 @@ export default function VisitorPage() {
           onChange={setFilters}
           countries={countries}
           homeSet={!!home}
-          variant="visitor"
         />
 
         <section className="flex-1 min-w-0">
@@ -96,7 +93,7 @@ export default function VisitorPage() {
               aria-label="View mode"
               className="inline-flex gap-1 rounded-xl bg-[var(--muted-soft)] p-1 ring-1 ring-border"
             >
-              {(["map", "list", "calendar"] as View[]).map((v) => {
+              {(["list", "calendar", "map"] as View[]).map((v) => {
                 const icon = v === "list" ? "☰" : v === "calendar" ? "▦" : "◉";
                 return (
                   <button
@@ -147,6 +144,8 @@ export default function VisitorPage() {
             </div>
           </div>
 
+          {view === "list" && <ShowList shows={sorted} homeSet={!!home} total={annotated.length} />}
+          {view === "calendar" && <ShowCalendar shows={sorted} />}
           {view === "map" && (
             <ShowMap
               shows={sorted}
@@ -154,10 +153,6 @@ export default function VisitorPage() {
               maxDistanceKm={filters.maxDistanceKm}
             />
           )}
-          {view === "list" && (
-            <ShowList shows={sorted} homeSet={!!home} variant="visitor" total={annotated.length} />
-          )}
-          {view === "calendar" && <ShowCalendar shows={sorted} />}
         </section>
       </main>
 

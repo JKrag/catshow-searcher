@@ -21,14 +21,20 @@ export const defaultFilters: Filters = {
   maxDistanceKm: null,
 };
 
+export const defaultVisitorFilters: Filters = {
+  ...defaultFilters,
+  maxDistanceKm: 200,
+};
+
 interface Props {
   filters: Filters;
   onChange: (f: Filters) => void;
   countries: string[];
   homeSet: boolean;
+  variant?: "visitor" | "full";
 }
 
-export function FilterSidebar({ filters, onChange, countries, homeSet }: Props) {
+export function FilterSidebar({ filters, onChange, countries, homeSet, variant = "full" }: Props) {
   const [countryQuery, setCountryQuery] = useState("");
 
   const toggleOrg = (o: Org) => {
@@ -51,58 +57,64 @@ export function FilterSidebar({ filters, onChange, countries, homeSet }: Props) 
     c.toLowerCase().includes(countryQuery.toLowerCase()),
   );
 
+  const showAll = filters.maxDistanceKm === null;
+
   return (
     <aside className="w-full lg:w-72 lg:sticky lg:top-20 lg:self-start text-sm">
       <div className="rounded-2xl bg-card/80 backdrop-blur ring-1 ring-border shadow-sm divide-y divide-border overflow-hidden">
-        <section className="p-4">
-          <h3 className="font-semibold mb-2.5 text-xs uppercase tracking-wider text-muted-foreground">
-            Organisation
-          </h3>
-          <div className="flex gap-2">
-            {(["FIFe", "TICA"] as Org[]).map((o) => {
-              const active = filters.org.includes(o);
-              const base =
-                "flex-1 px-3 py-1.5 rounded-lg ring-1 ring-inset cursor-pointer text-xs font-semibold transition active:scale-[0.98]";
-              const colors =
-                o === "FIFe"
-                  ? active
-                    ? "bg-[var(--primary)] text-[var(--primary-fg)] ring-[var(--primary)] shadow-sm"
-                    : "bg-[var(--fife-soft)] text-[var(--fife-fg)] ring-[var(--fife)]/30 hover:bg-[var(--primary)]/15"
-                  : active
-                    ? "bg-[var(--secondary)] text-[var(--secondary-fg)] ring-[var(--secondary)] shadow-sm"
-                    : "bg-[var(--tica-soft)] text-[var(--tica-fg)] ring-[var(--tica)]/30 hover:bg-[var(--secondary)]/15";
-              return (
-                <button
-                  key={o}
-                  type="button"
-                  onClick={() => toggleOrg(o)}
-                  aria-pressed={active}
-                  className={`${base} ${colors}`}
-                >
-                  {o}
-                </button>
-              );
-            })}
-          </div>
-        </section>
+        {variant === "full" && (
+          <section className="p-4">
+            <h3 className="font-semibold mb-2.5 text-xs uppercase tracking-wider text-muted-foreground">
+              Organisation
+            </h3>
+            <div className="flex gap-2">
+              {(["FIFe", "TICA"] as Org[]).map((o) => {
+                const active = filters.org.includes(o);
+                const base =
+                  "flex-1 px-3 py-1.5 rounded-lg ring-1 ring-inset cursor-pointer text-xs font-semibold transition active:scale-[0.98]";
+                const colors =
+                  o === "FIFe"
+                    ? active
+                      ? "bg-[var(--primary)] text-[var(--primary-fg)] ring-[var(--primary)] shadow-sm"
+                      : "bg-[var(--fife-soft)] text-[var(--fife-fg)] ring-[var(--fife)]/30 hover:bg-[var(--primary)]/15"
+                    : active
+                      ? "bg-[var(--secondary)] text-[var(--secondary-fg)] ring-[var(--secondary)] shadow-sm"
+                      : "bg-[var(--tica-soft)] text-[var(--tica-fg)] ring-[var(--tica)]/30 hover:bg-[var(--secondary)]/15";
+                return (
+                  <button
+                    key={o}
+                    type="button"
+                    onClick={() => toggleOrg(o)}
+                    aria-pressed={active}
+                    className={`${base} ${colors}`}
+                  >
+                    {o}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
-        <section className="p-4">
-          <h3 className="font-semibold mb-2.5 text-xs uppercase tracking-wider text-muted-foreground">
-            Search
-          </h3>
-          <div className="relative">
-            <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-              ⌕
-            </span>
-            <input
-              type="search"
-              value={filters.q}
-              onChange={(e) => onChange({ ...filters, q: e.target.value })}
-              placeholder="Title, club, city, venue…"
-              className="w-full rounded-lg border border-border bg-[var(--surface)] pl-7 pr-2 py-1.5 outline-none focus:ring-2 focus:ring-[var(--accent)]/40 focus:border-[var(--accent)] transition"
-            />
-          </div>
-        </section>
+        {variant === "full" && (
+          <section className="p-4">
+            <h3 className="font-semibold mb-2.5 text-xs uppercase tracking-wider text-muted-foreground">
+              Search
+            </h3>
+            <div className="relative">
+              <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                ⌕
+              </span>
+              <input
+                type="search"
+                value={filters.q}
+                onChange={(e) => onChange({ ...filters, q: e.target.value })}
+                placeholder="Title, club, city, venue…"
+                className="w-full rounded-lg border border-border bg-[var(--surface)] pl-7 pr-2 py-1.5 outline-none focus:ring-2 focus:ring-[var(--accent)]/40 focus:border-[var(--accent)] transition"
+              />
+            </div>
+          </section>
+        )}
 
         <section className="p-4">
           <h3 className="font-semibold mb-2.5 text-xs uppercase tracking-wider text-muted-foreground">
@@ -180,63 +192,120 @@ export function FilterSidebar({ filters, onChange, countries, homeSet }: Props) 
           </div>
         </section>
 
-        <section className="p-4">
-          <div className="flex items-center justify-between mb-2.5">
-            <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+        {variant === "visitor" ? (
+          <section className="p-4">
+            <h3 className="font-semibold mb-2.5 text-xs uppercase tracking-wider text-muted-foreground">
               Max driving distance
             </h3>
-            {homeSet && filters.maxDistanceKm != null && (
-              <button
-                type="button"
-                onClick={() => onChange({ ...filters, maxDistanceKm: null })}
-                className="text-[11px] text-[var(--primary)] hover:underline"
-              >
-                Clear
-              </button>
+            {!homeSet ? (
+              <p className="text-muted-foreground text-xs">
+                Set a home address to filter by distance.
+              </p>
+            ) : (
+              <>
+                <label className="flex items-center gap-2 mb-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showAll}
+                    onChange={() =>
+                      onChange({ ...filters, maxDistanceKm: showAll ? 200 : null })
+                    }
+                    className="accent-[var(--primary)]"
+                  />
+                  <span className="text-sm">Show all distances</span>
+                </label>
+                {!showAll && (
+                  <>
+                    <div className="flex items-baseline justify-between mb-2">
+                      <span className="text-sm font-semibold tabular-nums text-foreground">
+                        ≤ {filters.maxDistanceKm} km
+                      </span>
+                      <span className="text-[11px] text-muted-foreground tabular-nums">
+                        50 – 500 km
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={50}
+                      max={500}
+                      step={25}
+                      value={filters.maxDistanceKm ?? 200}
+                      onChange={(e) =>
+                        onChange({ ...filters, maxDistanceKm: Number(e.target.value) })
+                      }
+                      aria-label="Maximum driving distance in kilometres"
+                      className="w-full accent-[var(--primary)] cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[10px] text-muted-foreground/70 mt-1 px-0.5 tabular-nums">
+                      <span>50</span>
+                      <span>200</span>
+                      <span>350</span>
+                      <span>500</span>
+                    </div>
+                  </>
+                )}
+              </>
             )}
-          </div>
-          {!homeSet ? (
-            <p className="text-muted-foreground mb-1.5 text-xs">
-              Set a home address to use this.
-            </p>
-          ) : (
-            <>
-              <div className="flex items-baseline justify-between mb-2">
-                <span className="text-sm font-semibold tabular-nums text-foreground">
-                  {filters.maxDistanceKm
-                    ? `≤ ${filters.maxDistanceKm.toLocaleString()} km`
-                    : "Any distance"}
-                </span>
-                <span className="text-[11px] text-muted-foreground tabular-nums">
-                  50 – 3000 km
-                </span>
-              </div>
-              <input
-                type="range"
-                min={50}
-                max={3000}
-                step={50}
-                value={filters.maxDistanceKm ?? 3000}
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  onChange({
-                    ...filters,
-                    maxDistanceKm: v >= 3000 ? null : v,
-                  });
-                }}
-                aria-label="Maximum driving distance in kilometres"
-                className="w-full accent-[var(--primary)] cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-muted-foreground/70 mt-1 px-0.5 tabular-nums">
-                <span>50</span>
-                <span>500</span>
-                <span>1000</span>
-                <span>2000</span>
-                <span>∞</span>
-              </div>
-            </>
-          )}
-        </section>
+          </section>
+        ) : (
+          <section className="p-4">
+            <div className="flex items-center justify-between mb-2.5">
+              <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                Max driving distance
+              </h3>
+              {homeSet && filters.maxDistanceKm != null && (
+                <button
+                  type="button"
+                  onClick={() => onChange({ ...filters, maxDistanceKm: null })}
+                  className="text-[11px] text-[var(--primary)] hover:underline"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            {!homeSet ? (
+              <p className="text-muted-foreground mb-1.5 text-xs">
+                Set a home address to use this.
+              </p>
+            ) : (
+              <>
+                <div className="flex items-baseline justify-between mb-2">
+                  <span className="text-sm font-semibold tabular-nums text-foreground">
+                    {filters.maxDistanceKm
+                      ? `≤ ${filters.maxDistanceKm.toLocaleString()} km`
+                      : "Any distance"}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground tabular-nums">
+                    50 – 3000 km
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={50}
+                  max={3000}
+                  step={50}
+                  value={filters.maxDistanceKm ?? 3000}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    onChange({
+                      ...filters,
+                      maxDistanceKm: v >= 3000 ? null : v,
+                    });
+                  }}
+                  aria-label="Maximum driving distance in kilometres"
+                  className="w-full accent-[var(--primary)] cursor-pointer"
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground/70 mt-1 px-0.5 tabular-nums">
+                  <span>50</span>
+                  <span>500</span>
+                  <span>1000</span>
+                  <span>2000</span>
+                  <span>∞</span>
+                </div>
+              </>
+            )}
+          </section>
+        )}
       </div>
     </aside>
   );

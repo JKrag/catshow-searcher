@@ -4,6 +4,34 @@ Brief record of significant changes. Newest first. Each entry covers a PR or log
 
 ---
 
+## GH #11 — Persona routes (visitor / exhibitor / organizer)
+
+**Route structure**
+- `/` — Visitor page: map-first default, minimal filter sidebar (date + country + distance only), no org toggle or search box
+- `/exhibitor` — Exhibitor page: full filter sidebar, list default view, show_type/show_format/website/flyer links all visible
+- `/organizer` — Organizer stub: placeholder with "Timeline view coming soon" message
+
+**Shared hooks extracted** (`src/hooks/`)
+- `useShows.ts` — wraps `/api/shows` fetch with AbortController; returns `{ shows, countries, loading }`
+- `useRoutes.ts` — wraps `/api/route` batch fetch with Haversine fallback; accumulates routes across re-renders
+
+**New files**
+- `src/lib/haversine.ts` — pure Haversine distance function (extracted from page.tsx)
+- `src/components/PersonaNav.tsx` — thin tab bar in layout; highlights active route via `usePathname()`
+- `src/app/exhibitor/page.tsx` — full exhibitor view
+- `src/app/organizer/page.tsx` — organizer stub
+
+**Modified components**
+- `FilterSidebar`: `variant="visitor"` hides Organisation + Search sections; visitor distance slider capped at 500 km with "Show all" checkbox; `defaultVisitorFilters` exported with `maxDistanceKm: 50`
+- `ShowList`: `variant="visitor"` hides show_type/show_format rows; external links (↗ / 🌐 / 📄) kept in both variants
+- `src/app/layout.tsx`: `<PersonaNav />` added above `{children}`
+- `src/app/page.tsx`: rewritten as visitor page (map default, visitor sidebar/list variants)
+
+**Verification**
+Visit all three routes after any UI change: `/` (visitor, map default), `/exhibitor` (list default, full filters), `/organizer` (stub). PersonaNav must highlight the active route on each. Home address (localStorage) persists across all three.
+
+---
+
 ## commit bbe8d60 — Unit tests (#9)
 
 **Vitest setup** (`vitest.config.ts`, `package.json`)

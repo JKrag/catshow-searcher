@@ -70,18 +70,16 @@ Done. GitHub Actions workflow triggers on pull_request to main. Runs `npm ci` + 
 
 ## Phase 5 — Big-picture UX
 
-### #11 — Redesign for user groups (Epic)
-Three distinct personas with different needs:
+### #11 — Redesign for user groups (Epic) ✅
+Done. Three URL-based persona routes implemented:
 
-- **Show visitor** — general public; cares about nearby shows, opening hours, entry fee; not
-  interested in judges or ring counts.
-- **Exhibitor** — wants distances, judge names, ring counts; for TICA: AB vs SP rings; for
-  FIFe: 1- vs 2-certificate shows and special shows.
-- **Show organizer** — plans 1–2 years out; needs to know spacing rules (FIFe: ≥100 km and
-  ≥2 weeks from other FIFe shows); timeline/calendar view of future slots.
+- `/` — **Visitor**: map default, minimal sidebar (date + country + distance, 50 km default, 500 km max, "Show all" checkbox), no org/search filters
+- `/exhibitor` — **Exhibitor**: full sidebar with all 5 sections, list default, show_type/format/links all shown
+- `/organizer` — **Organizer**: stub with "Timeline view coming soon" placeholder
 
-Needs a design session and a written design doc before any code. Break into implementable
-sub-issues first.
+Shared hooks (`useShows`, `useRoutes`), `PersonaNav` component, and `haversine.ts` utility extracted/created. `FilterSidebar` and `ShowList` both accept a `variant` prop.
+
+**Deferred to follow-up issues:** judge names, AB/SP ring counts, entry fees, opening hours, and the full organizer timeline/spacing-rule engine.
 
 ### #12 — Internationalization
 The domain `katteudstilling.dk` suggests a Danish entry point alongside an international one.
@@ -101,5 +99,5 @@ on components that are still changing.
 | 5 | #8 External links | ✅ Done | #6 |
 | 6 | #9 Unit tests | ✅ Done | #6 (architecture stable) |
 | 7 | #10 CI pipeline | ✅ Done | #9 |
-| 8 | #11 Redesign epic | Pending | design doc first |
+| 8 | #11 Redesign epic | ✅ Done | — |
 | 9 | #12 Internationalization | Pending | #11 (UI stable) |

@@ -58,10 +58,24 @@ When you make changes, update the relevant files before committing:
 | `CHANGELOG.md` | A PR is ready — add a section summarising what changed and why |
 | `WORLD-KNOWLEDGE.md` | You discover or correct a fact about an external system (URL format, auth requirements, field structure, rate limits) |
 
+## UI routes — verify all three after any UI change
+
+Three persona routes exist; each must be checked after UI/component changes:
+
+| Route | Persona | Default view | Sidebar variant |
+|-------|---------|--------------|-----------------|
+| `/` | Visitor | Map | `visitor` — date, country, distance only |
+| `/exhibitor` | Exhibitor | List | `full` — all 5 sections |
+| `/organizer` | Organizer | — | stub placeholder |
+
+`PersonaNav` (in `layout.tsx`) must highlight the active route on each.
+Home address (`localStorage`) persists across all three.
+
 ## What's done
 
 All core features work end-to-end: scraping both FIFe and TICA, detail-page
 fetching (show type + club website/flyer), geocoding, routing, filtered API,
 list/calendar/map views with org badges, home address + distance.
+Three persona routes (`/`, `/exhibitor`, `/organizer`) with shared hooks.
 
 See CHANGELOG.md for a full history. See ROADMAP.md for what's next.
