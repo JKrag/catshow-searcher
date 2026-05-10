@@ -128,6 +128,7 @@ export async function fetchTica(): Promise<NormalisedTicaShow[]> {
 export interface TicaShowDetail {
   show_format: string | null;
   flyer_url: string | null;
+  judges: string[] | null;
 }
 
 const DETAIL_BASE =
@@ -142,7 +143,34 @@ export function parseTicaDetail(html: string): TicaShowDetail {
   const flyer_url =
     flyerRaw && flyerRaw !== "http://" && flyerRaw !== "https://" ? flyerRaw : null;
 
-  return { show_format, flyer_url };
+  const judges = parseJudges(html);
+
+  return { show_format, flyer_url, judges };
+}
+
+function parseJudges(html: string): string[] | null {
+  // Target the first <div class="judges"> whose label text is "Judges:" (not "Show comments:")
+  const block = html.match(/class="judges">\s*<label>\s*Judges:\s*<\/label>\s*<span>([\s\S]*?)<\/span>/);
+  if (!block) return null;
+
+  const text = block[1]
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/&nbsp;/g, " ")
+    .replace(/<[^>]+>/g, "");
+
+  const seen = new Set<string>();
+  const judges: string[] = [];
+  for (const m of text.matchAll(/([^\n,()]+?)\s*\((AB|SP|LH|SH|HHP)\)/g)) {
+    // Strip "AM: " / "PM: " session prefix that may lead the first name on a line
+    const name = m[1].trim().replace(/^(AM|PM):\s*/i, "").trim();
+    if (!name) continue;
+    const entry = `${name}(${m[2]})`;
+    if (!seen.has(entry)) {
+      seen.add(entry);
+      judges.push(entry);
+    }
+  }
+  return judges.length > 0 ? judges : null;
 }
 
 export async function fetchTicaDetail(sourceId: string): Promise<TicaShowDetail> {

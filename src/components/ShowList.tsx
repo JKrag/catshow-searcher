@@ -88,6 +88,11 @@ export function ShowList({ shows, homeSet, variant = "full", total }: Props) {
                   {variant === "full" && s.source === "TICA" && s.show_format && (
                     <div className="text-xs text-muted-foreground mt-0.5 italic">{s.show_format}</div>
                   )}
+                  {variant === "full" && s.source === "TICA" && s.judges && s.judges.length > 0 && (
+                    <div className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      {s.judges.join(" · ")}
+                    </div>
+                  )}
                 </td>
                 <td className="py-3 px-3">
                   <div className="text-foreground/90">

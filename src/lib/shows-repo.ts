@@ -76,6 +76,7 @@ export function upsertShows(
           lng: null,
           show_format: null,
           flyer_url: null,
+          judges: null,
           detail_fetched: false,
         });
       }
@@ -120,6 +121,7 @@ export function setTicaDetail(
   sourceId: string,
   show_format: string | null,
   flyer_url: string | null,
+  judges: string[] | null,
 ) {
   const show = store.shows.find(
     (s) => s.source === "TICA" && s.source_id === sourceId,
@@ -127,6 +129,7 @@ export function setTicaDetail(
   if (show) {
     show.show_format = show_format;
     show.flyer_url = flyer_url;
+    show.judges = judges;
     show.detail_fetched = true;
   }
 }
