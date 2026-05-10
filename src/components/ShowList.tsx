@@ -6,6 +6,8 @@ import { OrgBadge } from "./OrgBadge";
 interface Props {
   shows: ShowWithDistance[];
   homeSet: boolean;
+  variant?: "visitor" | "full";
+  total?: number;
 }
 
 function formatDates(s: Show): string {
@@ -28,14 +30,21 @@ function venueAddsInfo(venue: string, city: string | null, country: string | nul
   return false;
 }
 
-export function ShowList({ shows, homeSet }: Props) {
+export function ShowList({ shows, homeSet, variant = "full", total }: Props) {
   if (shows.length === 0) {
+    const hiddenByDistance = total != null && total > 0;
     return (
-      <div className="rounded-2xl bg-card/80 ring-1 ring-border p-10 text-center shadow-sm">
-        <div className="text-3xl mb-2">🐾</div>
-        <div className="font-medium text-foreground">No shows match the filters.</div>
+      <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 ring-1 ring-amber-300/60 dark:ring-amber-700/40 p-10 text-center shadow-sm">
+        <div className="text-3xl mb-2">🔍</div>
+        <div className="font-medium text-foreground">
+          {hiddenByDistance
+            ? `0 of ${total} shows match — filters are too narrow`
+            : "No shows match the filters."}
+        </div>
         <div className="text-muted-foreground text-sm mt-1">
-          Try clearing a filter or expanding the date range.
+          {hiddenByDistance
+            ? 'Try increasing the distance limit, unchecking country filters, or use "Show all distances".'
+            : "Try clearing a filter or expanding the date range."}
         </div>
       </div>
     );
@@ -73,10 +82,10 @@ export function ShowList({ shows, homeSet }: Props) {
                   {s.club && s.club !== s.title && (
                     <div className="text-xs text-muted-foreground mt-0.5">{s.club}</div>
                   )}
-                  {s.source === "FIFe" && s.show_type && (
+                  {variant === "full" && s.source === "FIFe" && s.show_type && (
                     <div className="text-xs text-muted-foreground mt-0.5 italic">{s.show_type}</div>
                   )}
-                  {s.source === "TICA" && s.show_format && (
+                  {variant === "full" && s.source === "TICA" && s.show_format && (
                     <div className="text-xs text-muted-foreground mt-0.5 italic">{s.show_format}</div>
                   )}
                 </td>
