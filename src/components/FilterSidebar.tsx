@@ -9,6 +9,7 @@ export interface Filters {
   from: string;
   to: string;
   q: string;
+  judgeQ: string;
   maxDistanceKm: number | null;
 }
 
@@ -18,6 +19,7 @@ export const defaultFilters: Filters = {
   from: "",
   to: "",
   q: "",
+  judgeQ: "",
   maxDistanceKm: null,
 };
 
@@ -113,6 +115,31 @@ export function FilterSidebar({ filters, onChange, countries, homeSet, variant =
                 className="w-full rounded-lg border border-border bg-[var(--surface)] pl-7 pr-2 py-1.5 outline-none focus:ring-2 focus:ring-[var(--accent)]/40 focus:border-[var(--accent)] transition"
               />
             </div>
+          </section>
+        )}
+
+        {variant === "full" && (
+          <section className="p-4">
+            <h3 className="font-semibold mb-2.5 text-xs uppercase tracking-wider text-muted-foreground">
+              Judge
+            </h3>
+            <div className="relative">
+              <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                ⌕
+              </span>
+              <input
+                type="search"
+                value={filters.judgeQ}
+                onChange={(e) => onChange({ ...filters, judgeQ: e.target.value })}
+                placeholder="Judge name…"
+                className="w-full rounded-lg border border-border bg-[var(--surface)] pl-7 pr-2 py-1.5 outline-none focus:ring-2 focus:ring-[var(--accent)]/40 focus:border-[var(--accent)] transition"
+              />
+            </div>
+            {filters.judgeQ && (
+              <p className="text-[11px] text-muted-foreground mt-1.5">
+                Only TICA shows with a confirmed match are shown.
+              </p>
+            )}
           </section>
         )}
 

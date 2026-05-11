@@ -4,6 +4,22 @@ Brief record of significant changes. Newest first. Each entry covers a PR or log
 
 ---
 
+## PR #20 — TICA judge names (scrape, store, display, filter)
+
+**Data layer**
+- `TicaShow` gains `judges: string[] | null` field
+- `parseTicaDetail` extracts judges from `<div class="judges">` block on the TICA detail endpoint
+- Parser strips AM/PM session prefixes, deduplicates across days/rings, handles accented/hyphenated names
+- `setTicaDetail` updated with 5th `judges` param; store migration backfills `judges: null` on existing TICA shows
+- 6 new Vitest tests for judge parsing (49 total)
+
+**UI**
+- Exhibitor list: judges displayed as `Name(Ring) · Name(Ring)` below title for TICA shows with data
+- Exhibitor sidebar: "Judge" search section filters to confirmed matches only — shows with no judge data are excluded when a query is typed
+- Hint text: "Only TICA shows with a confirmed match are shown."
+
+---
+
 ## GH #11 — Persona routes (visitor / exhibitor / organizer)
 
 **Route structure**

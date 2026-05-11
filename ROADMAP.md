@@ -79,7 +79,7 @@ Done. Three URL-based persona routes implemented:
 
 Shared hooks (`useShows`, `useRoutes`), `PersonaNav` component, and `haversine.ts` utility extracted/created. `FilterSidebar` and `ShowList` both accept a `variant` prop.
 
-**Deferred to follow-up issues:** judge names, AB/SP ring counts, entry fees, opening hours, and the full organizer timeline/spacing-rule engine.
+**Deferred to follow-up issues:** AB/SP ring counts, entry fees, opening hours, and the full organizer timeline/spacing-rule engine.
 
 ### #12 — Internationalization
 The domain `katteudstilling.dk` suggests a Danish entry point alongside an international one.
@@ -100,4 +100,5 @@ on components that are still changing.
 | 6 | #9 Unit tests | ✅ Done | #6 (architecture stable) |
 | 7 | #10 CI pipeline | ✅ Done | #9 |
 | 8 | #11 Redesign epic | ✅ Done | — |
-| 9 | #12 Internationalization | Pending | #11 (UI stable) |
+| 9 | PR #20 TICA judge names | ✅ Done | #11 |
+| 10 | #12 Internationalization | Pending | #11 (UI stable) |

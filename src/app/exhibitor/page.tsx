@@ -42,11 +42,20 @@ export default function ExhibitorPage() {
   }, [shows, routes, home]);
 
   const visible = useMemo(() => {
-    if (!home || !filters.maxDistanceKm) return annotated;
-    return annotated.filter(
-      (s) => s.distance_km != null && s.distance_km <= filters.maxDistanceKm!,
-    );
-  }, [annotated, filters.maxDistanceKm, home]);
+    let result = annotated;
+    if (home && filters.maxDistanceKm) {
+      result = result.filter(
+        (s) => s.distance_km != null && s.distance_km <= filters.maxDistanceKm!,
+      );
+    }
+    if (filters.judgeQ) {
+      const q = filters.judgeQ.toLowerCase();
+      result = result.filter(
+        (s) => s.source === "TICA" && s.judges?.some((j) => j.toLowerCase().includes(q)),
+      );
+    }
+    return result;
+  }, [annotated, filters.maxDistanceKm, filters.judgeQ, home]);
 
   const sorted = useMemo(() => {
     if (!home || !filters.maxDistanceKm) {
