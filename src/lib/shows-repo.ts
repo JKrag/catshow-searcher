@@ -49,6 +49,7 @@ export function upsertShows(
           source: "TICA",
           show_format: ex.show_format,
           flyer_url: ex.flyer_url,
+          judges: ex.judges,
           detail_fetched: ex.detail_fetched,
         };
       }
