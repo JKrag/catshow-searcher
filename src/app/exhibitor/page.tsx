@@ -17,7 +17,7 @@ type View = "list" | "calendar" | "map";
 export default function ExhibitorPage() {
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [view, setView] = useState<View>("list");
-  const [home] = useHome();
+  const [home, setHome] = useHome();
 
   const { shows, countries, loading } = useShows(filters);
   const routes = useRoutes(shows, home);
@@ -83,7 +83,7 @@ export default function ExhibitorPage() {
               </p>
             </div>
           </div>
-          <HomeAddressInput />
+          <HomeAddressInput home={home} setHome={setHome} />
         </div>
       </header>
 

@@ -1,8 +1,11 @@
 "use client";
 
 import { HomeAddressInput } from "@/components/HomeAddressInput";
+import { useHome } from "@/components/home";
 
 export default function OrganizerPage() {
+  const [home, setHome] = useHome();
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-30 backdrop-blur-md bg-[var(--background)]/75 border-b border-border/70">
@@ -20,7 +23,7 @@ export default function OrganizerPage() {
               </p>
             </div>
           </div>
-          <HomeAddressInput />
+          <HomeAddressInput home={home} setHome={setHome} />
         </div>
       </header>
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrLoadStore } from "@/lib/store";
+import { getOrLoadStore, isStale } from "@/lib/store";
 import { listShows, distinctCountries } from "@/lib/shows-repo";
 import type { Org, ShowFilter } from "@/lib/types";
 
@@ -39,5 +39,5 @@ export async function GET(req: NextRequest) {
   const store = await getOrLoadStore();
   const shows = listShows(store, filter);
   const countries = distinctCountries(store);
-  return NextResponse.json({ shows, countries });
+  return NextResponse.json({ shows, countries, stale: isStale(store) });
 }

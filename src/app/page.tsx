@@ -17,7 +17,7 @@ type View = "list" | "calendar" | "map";
 export default function VisitorPage() {
   const [filters, setFilters] = useState<Filters>(defaultVisitorFilters);
   const [view, setView] = useState<View>("map");
-  const [home] = useHome();
+  const [home, setHome] = useHome();
 
   // TODO(prefill-country): when home is set on first load and the user has
   // no countries selected, prefill `filters.countries` from
@@ -76,7 +76,7 @@ export default function VisitorPage() {
               </p>
             </div>
           </div>
-          <HomeAddressInput />
+          <HomeAddressInput home={home} setHome={setHome} />
         </div>
       </header>
 
