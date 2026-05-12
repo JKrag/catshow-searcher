@@ -111,10 +111,9 @@ export function parseICal(text: string): VEvent[] {
   return events;
 }
 
-function normaliseFifeEvent(e: VEvent, cutoffDate: string): NormalisedFifeShow | null {
+export function normaliseFifeEvent(e: VEvent): NormalisedFifeShow | null {
   if (!e.uid || !e.dtstart || !e.summary) return null;
   const start = parseDate(e.dtstart);
-  if (start > cutoffDate) return null;
   // FIFe uses exclusive DTEND for all-day events; subtract one day for inclusive end.
   const endRaw = e.dtend ? parseDate(e.dtend) : start;
   const end = subtractOneDay(endRaw, start);
@@ -155,8 +154,12 @@ export async function fetchFife(): Promise<NormalisedFifeShow[]> {
 
     let hitCutoff = false;
     for (const e of events) {
-      const show = normaliseFifeEvent(e, cutoffDate);
-      if (!show) { hitCutoff = true; continue; }
+      if (e.dtstart && parseDate(e.dtstart) > cutoffDate) {
+        hitCutoff = true;
+        continue;
+      }
+      const show = normaliseFifeEvent(e);
+      if (!show) continue; // malformed event — skip without stopping pagination
       allShows.push(show);
     }
 
