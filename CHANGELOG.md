@@ -4,6 +4,19 @@ Brief record of significant changes. Newest first. Each entry covers a PR or log
 
 ---
 
+## 88e86da — Bug fixes: home address state + stale-data judge visibility
+
+**HomeAddressInput state isolation**
+- `HomeAddressInput` was calling its own `useHome()` in isolation; setting an address updated only the component's local state, not the page-level `home`
+- `homeSet` was always `false` until page reload → distance slider never appeared, distance column never showed
+- Fix: `home`/`setHome` lifted to page level and passed as required props to `HomeAddressInput` on all three routes
+
+**Stale store / judges invisible on first load**
+- When the blob store is >24h old the server returns old data and starts a background scrape; judge names (populated by the detail-fetch step) only appeared after a filter change happened to coincide with the scrape progressing
+- Fix: `/api/shows` now includes `stale: boolean`; `useShows` schedules a silent re-fetch after 8 s when stale, so freshly-scraped judge data surfaces automatically without any user action
+
+---
+
 ## PR #20 — TICA judge names (scrape, store, display, filter)
 
 **Data layer**
