@@ -81,6 +81,12 @@ Shared hooks (`useShows`, `useRoutes`), `PersonaNav` component, and `haversine.t
 
 **Deferred to follow-up issues:** AB/SP ring counts, entry fees, opening hours, and the full organizer timeline/spacing-rule engine.
 
+### #21 — FIFe iCal pagination ✅
+Done. `fetchFife()` in `src/lib/scrapers/fife.ts` now paginates through all iCal pages
+(`…/page/N/?ical=1`) up to a configurable cutoff (default 3 years ahead) instead of
+fetching only the first 30 events. Stops on an empty page or when any event in a batch
+exceeds the cutoff. Expect ~660–750 FIFe shows vs ~38 before.
+
 ### #12 — Internationalization
 The domain `katteudstilling.dk` suggests a Danish entry point alongside an international one.
 Add multi-language support once the UI is stable. Doing this last avoids duplicating i18n work
@@ -101,4 +107,5 @@ on components that are still changing.
 | 7 | #10 CI pipeline | ✅ Done | #9 |
 | 8 | #11 Redesign epic | ✅ Done | — |
 | 9 | PR #20 TICA judge names | ✅ Done | #11 |
-| 10 | #12 Internationalization | Pending | #11 (UI stable) |
+| 10 | #21 FIFe iCal pagination | ✅ Done | — |
+| 11 | #12 Internationalization | Pending | #11 (UI stable) |

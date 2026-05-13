@@ -4,6 +4,18 @@ Brief record of significant changes. Newest first. Each entry covers a PR or log
 
 ---
 
+## Issue #21 — FIFe iCal pagination (3-year window)
+
+- `fetchFife()` previously fetched only the first iCal page (~30 events, covering roughly the next 2–3 months)
+- The FIFe calendar paginates via `…/page/N/?ical=1` and extends to ~2035 across ~49 pages
+- Fix: paginated loop with a 3-year cutoff; stops on an empty page or when any event in a batch exceeds the cutoff; 300 ms polite delay between pages
+- Extracted `normaliseFifeEvent()` helper for testability; `fifePageUrl()` builds the correct path-based URL
+- Expected result: ~660–750 FIFe shows in the store vs ~38 before
+- `WORLD-KNOWLEDGE.md` updated with canonical pagination URL pattern and notes on `tribe_paged` not working
+- `scripts/scrape-fife.ts` added (`npm run scrape:fife`) — smoke-tests the scraper against the live endpoint without starting the full app
+
+---
+
 ## 88e86da — Bug fixes: home address state + stale-data judge visibility
 
 **HomeAddressInput state isolation**

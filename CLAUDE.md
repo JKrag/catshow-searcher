@@ -40,6 +40,16 @@ and `upsertShows` (including the critical "preserve detail fields on update" pat
 When adding new pure functions to scrapers, `normalize-country.ts`, or `shows-repo.ts`,
 add matching tests. Tests for Next.js API routes and React components are not yet set up.
 
+To smoke-test a scraper against the live endpoint without starting the full app:
+
+```
+npm run scrape:fife   # calls fetchFife() and prints count + date range
+```
+
+Script lives at `scripts/scrape-fife.ts`. Runs via Node's `--experimental-strip-types`
+(Node 22+) — no extra dependencies needed. Use this after any change to `fife.ts` that
+affects network behaviour.
+
 ## Tool usage
 
 Prefer built-in tools over Bash for file operations — they are cheaper on tokens:

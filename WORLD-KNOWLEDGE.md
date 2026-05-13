@@ -9,10 +9,16 @@ Update this file whenever you discover or correct something about how these syst
 
 ### Calendar iCal feed
 
-**URL:** `https://fifeweb.org/events/list/?tribe_eventcategory%5B0%5D=8&ical=1`
+**Canonical URL (page 1):** `https://fifeweb.org/events/category/all-shows/?ical=1`
+**Paginated URL (page N≥2):** `https://fifeweb.org/events/category/all-shows/page/N/?ical=1`
 
-- Returns all upcoming international cat shows as RFC 5545 iCal
-- Fields present per VEVENT: `UID`, `SUMMARY`, `DTSTART`, `DTEND`, `URL`, `LOCATION`, `ORGANIZER`
+Pagination notes:
+- ~49 pages total today; ~30 events per page; feed extends to ~Oct 2035
+- `tribe_paged=N` query param does **not** work — use path-based pagination only
+- The old URL `…/events/list/?tribe_eventcategory%5B0%5D=8&ical=1` only returns page 1
+
+Per-VEVENT fields present: `UID`, `SUMMARY`, `DTSTART`, `DTEND`, `URL`, `LOCATION`, `ORGANIZER`
+
 - `DESCRIPTION` is always **empty** — show type is NOT in the iCal
 - `DTEND` is exclusive (day-after for all-day events) — subtract one day for inclusive end date
 - `SUMMARY` is always just `"International show"` — not the club/event name
