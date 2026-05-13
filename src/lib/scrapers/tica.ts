@@ -117,8 +117,10 @@ export function parseTica(html: string): NormalisedTicaShow[] {
 }
 
 function extractSeasonYear(html: string): number | null {
-  const m = html.match(/id="season_year"[^>]*value="(\d{4})"/);
-  return m ? Number(m[1]) : null;
+  const root = parse(html);
+  const input = root.querySelector("input#season_year");
+  const val = input?.getAttribute("value");
+  return val ? Number(val) : null;
 }
 
 async function fetchTicaSeason(year: number): Promise<string> {
@@ -128,15 +130,17 @@ async function fetchTicaSeason(year: number): Promise<string> {
       "User-Agent": "catz/0.1 (cat-show finder)",
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: `season_year=${year}`,
+    body: new URLSearchParams({ season_year: String(year) }).toString(),
   });
   if (!res.ok) throw new Error(`TICA HTTP ${res.status} for season ${year}`);
   return res.text();
 }
 
 export async function fetchTica(): Promise<NormalisedTicaShow[]> {
-  // Detect current season year from the live page
-  const firstHtml = await fetchTicaSeason(new Date().getFullYear());
+  // GET the base URL to discover the actual current season year (avoids Jan–Apr off-by-one)
+  const res = await fetch(TICA_BASE, { headers: { "User-Agent": "catz/0.1 (cat-show finder)" } });
+  if (!res.ok) throw new Error(`TICA HTTP ${res.status}`);
+  const firstHtml = await res.text();
   const startYear = extractSeasonYear(firstHtml) ?? new Date().getFullYear();
   const cutoffYear = new Date().getFullYear() + TICA_SCRAPE_YEARS_AHEAD;
 
@@ -208,7 +212,7 @@ export async function fetchTicaDetail(sourceId: string): Promise<TicaShowDetail>
     redirect: "follow",
     headers: {
       "User-Agent": "Mozilla/5.0 (compatible; catz/0.1)",
-      Referer: TICA_URL,
+      Referer: TICA_BASE,
     },
   });
   if (!res.ok) throw new Error(`TICA detail HTTP ${res.status} for id=${sourceId}`);
