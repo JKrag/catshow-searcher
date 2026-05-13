@@ -1,7 +1,9 @@
 import { parse, type HTMLElement } from "node-html-parser";
 import type { NormalisedTicaShow } from "../types";
 
-const TICA_URL = "https://shows.tica.org/en/component/toes/shows";
+const TICA_BASE = "https://shows.tica.org/en/component/toes/shows";
+const TICA_SCRAPE_YEARS_AHEAD = 3;
+const TICA_MAX_SEASONS = 10; // safety cap
 
 const MONTHS: Record<string, number> = {
   january: 1,
@@ -114,13 +116,44 @@ export function parseTica(html: string): NormalisedTicaShow[] {
   return shows;
 }
 
-export async function fetchTica(): Promise<NormalisedTicaShow[]> {
-  const res = await fetch(TICA_URL, {
-    headers: { "User-Agent": "catz/0.1 (cat-show finder)" },
+function extractSeasonYear(html: string): number | null {
+  const root = parse(html);
+  const input = root.querySelector("input#season_year");
+  const val = input?.getAttribute("value");
+  return val ? Number(val) : null;
+}
+
+async function fetchTicaSeason(year: number): Promise<string> {
+  const res = await fetch(TICA_BASE, {
+    method: "POST",
+    headers: {
+      "User-Agent": "catz/0.1 (cat-show finder)",
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ season_year: String(year) }).toString(),
   });
+  if (!res.ok) throw new Error(`TICA HTTP ${res.status} for season ${year}`);
+  return res.text();
+}
+
+export async function fetchTica(): Promise<NormalisedTicaShow[]> {
+  // GET the base URL to discover the actual current season year (avoids Jan–Apr off-by-one)
+  const res = await fetch(TICA_BASE, { headers: { "User-Agent": "catz/0.1 (cat-show finder)" } });
   if (!res.ok) throw new Error(`TICA HTTP ${res.status}`);
-  const html = await res.text();
-  return parseTica(html);
+  const firstHtml = await res.text();
+  const startYear = extractSeasonYear(firstHtml) ?? new Date().getFullYear();
+  const cutoffYear = new Date().getFullYear() + TICA_SCRAPE_YEARS_AHEAD;
+
+  const allShows: NormalisedTicaShow[] = [];
+
+  for (let year = startYear; year <= cutoffYear && year < startYear + TICA_MAX_SEASONS; year++) {
+    const html = year === startYear ? firstHtml : await fetchTicaSeason(year);
+    const shows = parseTica(html);
+    if (shows.length === 0) break;
+    allShows.push(...shows);
+  }
+
+  return allShows;
 }
 
 // Detail data available from the TICA show detail endpoint.
@@ -179,7 +212,7 @@ export async function fetchTicaDetail(sourceId: string): Promise<TicaShowDetail>
     redirect: "follow",
     headers: {
       "User-Agent": "Mozilla/5.0 (compatible; catz/0.1)",
-      Referer: TICA_URL,
+      Referer: TICA_BASE,
     },
   });
   if (!res.ok) throw new Error(`TICA detail HTTP ${res.status} for id=${sourceId}`);

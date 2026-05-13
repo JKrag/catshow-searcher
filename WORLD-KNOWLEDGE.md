@@ -53,13 +53,19 @@ Useful fields extractable by HTML/regex:
 
 **URL:** `https://shows.tica.org/en/component/toes/shows`
 
-- Single HTML page listing all upcoming shows grouped by month under `.show-list`
 - Requires browser-like `User-Agent`; plain curl with short UA gets blocked
 - Structure: `.month-heading` elements set month context; `.show-entry` elements are shows
 - Each `.show-entry` contains: `.date` (day or range), `.address` (city, country), `.club-name`
 - Show ID extracted from `<a rel="…">` — the `rel` attribute value is the numeric TICA show ID
 - Direct link format: `https://shows.tica.org/en/component/toes/shows#show{id}`
 - Date range spanning month boundary (e.g. "30 - 02"): endDay < startDay → increment month
+
+**Season pagination via POST:**
+- Each page covers one TICA season: May 1 of `season_year` through April 30 of `season_year + 1`
+- Current season year is embedded as `<input type="hidden" id="season_year" … value="YYYY">`
+- Fetch any season with `POST /en/component/toes/shows` body `season_year=YYYY`
+- Works for current and future seasons; returns 0 `.show-entry` elements when season is empty
+- "Next Season" / "Previous Season" links on the page call `filterSeason(year)` JS — not plain URLs
 
 ### Per-show detail endpoint
 

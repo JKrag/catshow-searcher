@@ -10,7 +10,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "scrape:fife": "node --experimental-strip-types scripts/scrape-fife.ts"
+    "scrape:fife": "node --experimental-strip-types scripts/scrape-fife.ts",
+    "scrape:tica": "node --experimental-strip-types scripts/scrape-tica.ts"
   },
   "dependencies": {
     "@vercel/blob": "^2.3.3",

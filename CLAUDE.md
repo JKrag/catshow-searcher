@@ -44,11 +44,12 @@ To smoke-test a scraper against the live endpoint without starting the full app:
 
 ```
 npm run scrape:fife   # calls fetchFife() and prints count + date range
+npm run scrape:tica   # calls fetchTica() and prints count + date range
 ```
 
-Script lives at `scripts/scrape-fife.ts`. Runs via Node's `--experimental-strip-types`
-(Node 22+) — no extra dependencies needed. Use this after any change to `fife.ts` that
-affects network behaviour.
+Scripts live in `scripts/`. Run via Node's `--experimental-strip-types` (Node 22+) —
+no extra dependencies needed. Use after any change to the scraper files that affects
+network behaviour.
 
 ## Tool usage
 
