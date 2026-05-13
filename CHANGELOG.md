@@ -4,6 +4,18 @@ Brief record of significant changes. Newest first. Each entry covers a PR or log
 
 ---
 
+## feat/tica-season-pagination — TICA multi-season fetch
+
+- `fetchTica()` previously fetched only the current season (~144 shows)
+- TICA organises shows by season (May N → April N+1); navigation is via POST with `season_year=N`
+- Fix: detect current season year from the page, then POST for each subsequent season up to
+  `currentYear + 3`, stopping when a season returns 0 shows
+- Result: 205 shows across 4 seasons (through April 2030) vs ~144 before
+- Adds `scripts/scrape-tica.ts` (`npm run scrape:tica`) for live smoke-testing
+- `WORLD-KNOWLEDGE.md` updated with POST pagination details
+
+---
+
 ## Issue #21 — FIFe iCal pagination (3-year window)
 
 - `fetchFife()` previously fetched only the first iCal page (~30 events, covering roughly the next 2–3 months)
