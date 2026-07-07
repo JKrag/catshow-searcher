@@ -1,10 +1,25 @@
 "use client";
 
 import { HomeAddressInput } from "@/components/HomeAddressInput";
+import { DataFreshness } from "@/components/DataFreshness";
 import { useHome } from "@/components/home";
+import { useShows } from "@/hooks/useShows";
+import type { Org } from "@/lib/types";
+
+// Minimal filter — no shows are rendered in the organizer stub, but
+// useShows gives us updated_at/stale for the freshness indicator.
+const EMPTY_FILTER = {
+  org: ["FIFe", "TICA"] as Org[],
+  countries: [] as string[],
+  from: "",
+  to: "",
+  q: "",
+  includePast: false,
+};
 
 export default function OrganizerPage() {
   const [home, setHome] = useHome();
+  const { stale, updatedAt } = useShows(EMPTY_FILTER);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -35,6 +50,9 @@ export default function OrganizerPage() {
             Planning tools for show organizers — spacing rules, slot finder, and a
             multi-year timeline view — are coming soon.
           </p>
+          <div className="mt-4 flex justify-center">
+            <DataFreshness updatedAt={updatedAt} stale={stale} />
+          </div>
         </div>
       </main>
 

@@ -95,7 +95,7 @@ fit any Vercel function lifetime, so every `waitUntil` background refresh died
 silently. This explains both #27 (slow/opaque refresh) and #28 (judge filter
 appears broken — judges were simply never fetched). See ADR 0001.
 
-### 6.1 — Scrape pipeline in GitHub Actions (#27, root cause of #28)
+### 6.1 — Scrape pipeline in GitHub Actions (#27, root cause of #28) ✅
 - New `scripts/scrape-all.ts` runs the **full** pipeline (calendar scrape →
   detail fetch → geocode) and writes the store. Locally it writes
   `.data/catz.json`; with `BLOB_READ_WRITE_TOKEN` it reads/writes the blob
@@ -106,24 +106,36 @@ appears broken — judges were simply never fetched). See ADR 0001.
 - Delete the in-app `waitUntil` stale-refresh and the blocking first-run
   scrape; the app becomes read-only against the blob.
 
-### 6.2 — Admin page → status dashboard
+### 6.2 — Admin page → status dashboard ✅
 - Remove the "Refresh now" trigger (see ADR 0001).
 - Show: blob `updated_at`/age, show counts per org, detail-fetch and geocode
   coverage, `scrape_runs` history, link to the GitHub Actions runs page.
 
-### 6.3 — #25 Future shows by default
-- API/UI default to `start_date >= today`, with an explicit "include past
-  shows" toggle (exhibitor sidebar). Past shows are never purged — see ADR 0002.
+### 6.3 — #25 Future shows by default ✅
+- API defaults to `from=today` (UTC) when no `from` or `include_past=1` param
+  is provided. `listShows` already compares `end_date >= from`, so in-progress
+  shows (started before today, ending today-or-later) remain visible. Past
+  shows are never purged — see ADR 0002.
+- UI: "Include past shows" checkbox added to the date-range section in both
+  visitor and exhibitor sidebar variants (default unchecked). When checked,
+  `include_past=1` is sent; an explicit `from` date picker selection always
+  overrides this toggle.
+- New pure function `resolveFromFilter` in `src/lib/api-filter.ts`; covered
+  by 4 unit tests in `src/lib/__tests__/api-filter.test.ts`.
 
-### 6.4 — Data-freshness indicator
-- "Data updated N hours ago" shown subtly in the UI (all personas), sourced
-  from the store's `updated_at`.
+### 6.4 — Data-freshness indicator ✅
+- API response now includes `updated_at` (ISO string from `store.updated_at`)
+  alongside the existing `stale` boolean.
+- `useShows` hook exposes `updatedAt` and `stale` to callers.
+- New component `src/components/DataFreshness.tsx`: shows "Updated X ago"
+  with a tooltip for the absolute timestamp; amber-styled when `stale=true`.
+  Rendered on all three persona routes (`/`, `/exhibitor`, `/organizer`).
 
-### 6.5 — #24 Privacy notice
+### 6.5 — #24 Privacy notice ✅
 - Short transparency text near the home-address input: stored in your browser
   only; sent to Nominatim for coordinate lookup; not stored on our servers.
 
-### 6.6 — Docs & tracker hygiene
+### 6.6 — Docs & tracker hygiene ✅ (issue closing pending merge)
 - Rewrite README (it still describes the abandoned Postgres/Neon + docker
   setup; actual data layer is the `@vercel/blob` JSON store).
 - Close done issues: #6, #7, #8, #11, #26. Re-verify #28 after the first full

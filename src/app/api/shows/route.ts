@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrLoadStore, isStale } from "@/lib/store";
 import { listShows, distinctCountries } from "@/lib/shows-repo";
+import { resolveFromFilter } from "@/lib/api-filter";
 import type { Org, ShowFilter } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -17,8 +18,15 @@ export async function GET(req: NextRequest) {
   const country = sp.getAll("country");
   if (country.length) filter.country = country;
 
-  const from = sp.get("from");
-  if (from) filter.from = from;
+  // Resolve the effective `from` date:
+  //  - explicit `from` param wins unconditionally
+  //  - `include_past=1` (no explicit from) → no floor (show all historical shows)
+  //  - default → today (UTC YYYY-MM-DD), so only ongoing or future shows appear.
+  // listShows compares end_date >= from, so a show in progress (started before today,
+  // ends today-or-later) is NOT hidden by the default.
+  const resolvedFrom = resolveFromFilter(sp);
+  if (resolvedFrom) filter.from = resolvedFrom;
+
   const to = sp.get("to");
   if (to) filter.to = to;
 
@@ -39,5 +47,10 @@ export async function GET(req: NextRequest) {
   const store = await getOrLoadStore();
   const shows = listShows(store, filter);
   const countries = distinctCountries(store);
-  return NextResponse.json({ shows, countries, stale: isStale(store) });
+  return NextResponse.json({
+    shows,
+    countries,
+    stale: isStale(store),
+    updated_at: store.updated_at,
+  });
 }

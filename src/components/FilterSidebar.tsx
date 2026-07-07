@@ -11,6 +11,7 @@ export interface Filters {
   q: string;
   judgeQ: string;
   maxDistanceKm: number | null;
+  includePast: boolean;
 }
 
 export const defaultFilters: Filters = {
@@ -21,6 +22,7 @@ export const defaultFilters: Filters = {
   q: "",
   judgeQ: "",
   maxDistanceKm: null,
+  includePast: false,
 };
 
 export const defaultVisitorFilters: Filters = {
@@ -148,6 +150,15 @@ export function FilterSidebar({ filters, onChange, countries, homeSet, variant =
             Date range
           </h3>
           <div className="flex flex-col gap-2">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={filters.includePast}
+                onChange={(e) => onChange({ ...filters, includePast: e.target.checked })}
+                className="accent-[var(--primary)]"
+              />
+              <span className="text-sm">Include past shows</span>
+            </label>
             <label className="flex items-center justify-between gap-2">
               <span className="text-muted-foreground">From</span>
               <input

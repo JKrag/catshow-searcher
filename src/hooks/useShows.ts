@@ -9,12 +9,14 @@ interface ShowFilter {
   from: string;
   to: string;
   q: string;
+  includePast?: boolean;
 }
 
 interface ApiResp {
   shows: Show[];
   countries: string[];
   stale?: boolean;
+  updated_at?: string;
 }
 
 export function useShows(filters: ShowFilter) {
@@ -29,7 +31,14 @@ export function useShows(filters: ShowFilter) {
     const params = new URLSearchParams();
     filters.org.forEach((o) => params.append("org", o));
     filters.countries.forEach((c) => params.append("country", c));
-    if (filters.from) params.set("from", filters.from);
+    if (filters.from) {
+      // Explicit from-date wins; also send when includePast is true so API honours it
+      params.set("from", filters.from);
+    } else if (filters.includePast) {
+      // No explicit from + include past → ask API to skip the today default
+      params.set("include_past", "1");
+    }
+    // If neither, the API will default from=today (future shows only)
     if (filters.to) params.set("to", filters.to);
     if (filters.q) params.set("q", filters.q);
     const url = `/api/shows?${params.toString()}`;
@@ -59,11 +68,13 @@ export function useShows(filters: ShowFilter) {
       controller.abort();
       if (retryTimer.current) clearTimeout(retryTimer.current);
     };
-  }, [filters.org, filters.countries, filters.from, filters.to, filters.q]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.org, filters.countries, filters.from, filters.to, filters.q, filters.includePast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     shows: data?.shows ?? [],
     countries: data?.countries ?? [],
+    stale: data?.stale,
+    updatedAt: data?.updated_at,
     loading,
   };
 }
