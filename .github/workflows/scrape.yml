@@ -1,0 +1,26 @@
+name: Scrape shows
+
+on:
+  schedule:
+    # Daily, early morning UTC. Odd minute to avoid GitHub's on-the-hour congestion.
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    # Cold-store run (full geocode backlog at 1 req/sec) can take ~20 min
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run scrape:all
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}

@@ -1,4 +1,4 @@
-import { readStore, writeStore, EMPTY_STORE } from "../store";
+import { readStore, writeStore, migrateStore, EMPTY_STORE } from "../store";
 import type { CatzStore } from "../store";
 import {
   upsertShows,
@@ -123,9 +123,12 @@ async function fetchTicaDetails(
   return fetched;
 }
 
+// Runs in the scheduled scrape job (GitHub Actions) or locally via
+// `npm run scrape:all` — never inside the app (see docs/adr/0001). Budgets
+// default to unlimited; pass finite ones for quick local smoke runs.
 export async function runAllScrapers(
-  geocodeBudget = 80,
-  ticaDetailBudget = 30,
+  geocodeBudget = Infinity,
+  detailBudget = Infinity,
 ): Promise<ScrapeOutcome[]> {
   const existing = (await readStore()) ?? { ...EMPTY_STORE };
   const store: CatzStore = {
@@ -134,14 +137,15 @@ export async function runAllScrapers(
     geocode_cache: { ...existing.geocode_cache },
     scrape_runs: existing.scrape_runs.slice(),
   };
+  migrateStore(store);
 
   // Sequential — Nominatim is 1 req/sec; parallel runs cause 429s
   const fife = await runOne("FIFe", fetchFife, store, geocodeBudget);
   const tica = await runOne("TICA", fetchTica, store, geocodeBudget);
 
   // Batch-fetch show details for shows not yet fetched (rate-limited, sequential)
-  await fetchFifeDetails(store, ticaDetailBudget);
-  await fetchTicaDetails(store, ticaDetailBudget);
+  await fetchFifeDetails(store, detailBudget);
+  await fetchTicaDetails(store, detailBudget);
 
   store.updated_at = new Date().toISOString();
   try {
