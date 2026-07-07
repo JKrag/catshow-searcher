@@ -169,7 +169,7 @@ export default function AdminPage() {
           {/* GitHub Actions link */}
           <section className="text-sm">
             <a
-              href="https://github.com/JKrag/cat-tools/actions/workflows/scrape.yml"
+              href="https://github.com/JKrag/catshow-searcher/actions/workflows/scrape.yml"
               target="_blank"
               rel="noreferrer"
               className="underline text-blue-600 dark:text-blue-400"
