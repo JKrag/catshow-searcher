@@ -87,6 +87,55 @@ Done. `fetchFife()` in `src/lib/scrapers/fife.ts` now paginates through all iCal
 fetching only the first 30 events. Stops on an empty page or when any event in a batch
 exceeds the cutoff. Expect ~660–750 FIFe shows vs ~38 before.
 
+## Phase 6 — "Actually usable" milestone (scoped 2026-07-07)
+
+Production has not successfully scraped since 2026-05-08: the full pipeline
+(pagination + detail fetch + geocoding at ~1 req/s) takes 10–20 min and cannot
+fit any Vercel function lifetime, so every `waitUntil` background refresh died
+silently. This explains both #27 (slow/opaque refresh) and #28 (judge filter
+appears broken — judges were simply never fetched). See ADR 0001.
+
+### 6.1 — Scrape pipeline in GitHub Actions (#27, root cause of #28)
+- New `scripts/scrape-all.ts` runs the **full** pipeline (calendar scrape →
+  detail fetch → geocode) and writes the store. Locally it writes
+  `.data/catz.json`; with `BLOB_READ_WRITE_TOKEN` it reads/writes the blob
+  (must read-modify-write to preserve `geocode_cache` and `detail_fetched`).
+- Daily GitHub Actions cron workflow runs the script against the blob.
+- Remove the per-run detail budget caps (keep 1 req/s politeness) so judges
+  populate fully in one run.
+- Delete the in-app `waitUntil` stale-refresh and the blocking first-run
+  scrape; the app becomes read-only against the blob.
+
+### 6.2 — Admin page → status dashboard
+- Remove the "Refresh now" trigger (see ADR 0001).
+- Show: blob `updated_at`/age, show counts per org, detail-fetch and geocode
+  coverage, `scrape_runs` history, link to the GitHub Actions runs page.
+
+### 6.3 — #25 Future shows by default
+- API/UI default to `start_date >= today`, with an explicit "include past
+  shows" toggle (exhibitor sidebar). Past shows are never purged — see ADR 0002.
+
+### 6.4 — Data-freshness indicator
+- "Data updated N hours ago" shown subtly in the UI (all personas), sourced
+  from the store's `updated_at`.
+
+### 6.5 — #24 Privacy notice
+- Short transparency text near the home-address input: stored in your browser
+  only; sent to Nominatim for coordinate lookup; not stored on our servers.
+
+### 6.6 — Docs & tracker hygiene
+- Rewrite README (it still describes the abandoned Postgres/Neon + docker
+  setup; actual data layer is the `@vercel/blob` JSON store).
+- Close done issues: #6, #7, #8, #11, #26. Re-verify #28 after the first full
+  Actions run populates judge data; only then debug the filter itself if
+  still broken.
+
+### Deferred (explicitly out of this milestone)
+- katteudstilling.dk custom domain (drags in Danish i18n expectations, #12)
+- FIFe judge data investigation (unknown-sized; TICA-only judges acceptable)
+
+---
+
 ### #12 — Internationalization
 The domain `katteudstilling.dk` suggests a Danish entry point alongside an international one.
 Add multi-language support once the UI is stable. Doing this last avoids duplicating i18n work
