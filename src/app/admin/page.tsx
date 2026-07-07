@@ -1,176 +1,81 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import type { ScrapeRun } from "@/lib/types";
+import type { OrgStats } from "@/lib/admin-stats";
 
-interface Run {
-  id: string;
-  source: string;
-  started_at: string;
-  finished_at: string | null;
-  status: string;
-  items_seen: number;
-  items_changed: number;
-  error: string | null;
+interface StatusData {
+  updated_at: string;
+  orgs: OrgStats[];
+  scrape_runs: ScrapeRun[];
 }
 
-interface RefreshResult {
-  source: string;
-  ok: boolean;
-  inserted: number;
-  updated: number;
-  geocoded: number;
-  error?: string;
+function pct(numerator: number, denominator: number): string {
+  if (denominator === 0) return "—";
+  return `${Math.round((numerator / denominator) * 100)}%`;
 }
 
-interface DebugInfo {
-  blob_configured: boolean;
-  on_vercel: boolean;
-  local_path: string;
-  store_exists: boolean;
-  show_count: number;
-  geocache_count: number;
-  updated_at: string | null;
-  is_stale: boolean;
-  recent_runs: Run[];
-  read_error: string | null;
+function dataAge(updatedAt: string): string {
+  const ms = Date.now() - new Date(updatedAt).getTime();
+  const minutes = Math.floor(ms / 60_000);
+  if (minutes < 2) return "just now";
+  if (minutes < 60) return `${minutes} minutes ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
 export default function AdminPage() {
   const [token, setToken] = useState("");
-  const [runs, setRuns] = useState<Run[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const [last, setLast] = useState<RefreshResult[] | null>(null);
+  const [status, setStatus] = useState<StatusData | null>(null);
+  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [debug, setDebug] = useState<DebugInfo | null>(null);
 
   useEffect(() => {
     setToken(localStorage.getItem("catz.adminToken") ?? "");
   }, []);
 
-  const auth = token
-    ? { Authorization: `Bearer ${token}` }
-    : ({} as Record<string, string>);
+  const authHeaders = useCallback(
+    () =>
+      token
+        ? { Authorization: `Bearer ${token}` }
+        : ({} as Record<string, string>),
+    [token],
+  );
 
-  async function loadDebug() {
+  const loadStatus = useCallback(async () => {
+    setLoading(true);
+    setErr(null);
     try {
-      const res = await fetch("/api/debug", { cache: "no-store" });
-      if (res.ok) setDebug(await res.json());
-    } catch {
-      // debug is best-effort
-    }
-  }
-
-  // Elapsed timer while scrape is running
-  useEffect(() => {
-    if (!busy) { setElapsed(0); return; }
-    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
-    return () => clearInterval(id);
-  }, [busy]);
-
-  // Poll debug endpoint every 5s while busy so the store status updates as soon as the scrape lands
-  useEffect(() => {
-    if (!busy) return;
-    const id = setInterval(loadDebug, 5000);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [busy]);
-
-  async function loadRuns() {
-    try {
-      const res = await fetch("/api/admin/refresh", { headers: auth });
+      const res = await fetch("/api/admin/status", {
+        cache: "no-store",
+        headers: authHeaders(),
+      });
       if (!res.ok) {
         const body = await res.text().catch(() => "");
         setErr(`HTTP ${res.status}: ${body}`);
         return;
       }
-      const data = await res.json();
-      setRuns(data.runs);
-      setErr(null);
+      setStatus(await res.json());
     } catch (e) {
-      setErr(String(e));
+      setErr(`Network error: ${String(e)}`);
+    } finally {
+      setLoading(false);
     }
-  }
+  }, [authHeaders]);
 
+  // Reload whenever the token changes (including initial mount after localStorage read)
   useEffect(() => {
-    loadDebug();
-    loadRuns();
+    loadStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  async function refresh() {
-    setBusy(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/admin/refresh", {
-        method: "POST",
-        headers: auth,
-      });
-      const body = await res.text();
-      if (!res.ok) {
-        setErr(`HTTP ${res.status}: ${body}`);
-        return;
-      }
-      const data = JSON.parse(body);
-      if (data.error) {
-        setErr(`Server error: ${data.error}`);
-        return;
-      }
-      setLast(data.results);
-      await loadDebug();
-      await loadRuns();
-    } catch (e) {
-      setErr(
-        `Network error: ${String(e)}\n\nThe function may have timed out or crashed. Check /api/debug for current state.`,
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Admin</h1>
+      <h1 className="text-2xl font-bold">Admin — Status Dashboard</h1>
 
-      {debug && (
-        <section className="rounded border border-zinc-200 dark:border-zinc-800 p-3 text-sm space-y-1">
-          <div className="font-semibold mb-1">Store status</div>
-          {debug.read_error && (
-            <div className="text-rose-600">Read error: {debug.read_error}</div>
-          )}
-          {!debug.blob_configured && debug.on_vercel && (
-            <div className="text-amber-600">
-              ⚠ BLOB_READ_WRITE_TOKEN not set — using /tmp (ephemeral, resets on cold start)
-            </div>
-          )}
-          <div>
-            {debug.store_exists ? (
-              <>
-                <span className="text-green-600">●</span>{" "}
-                <strong>{debug.show_count}</strong> shows,{" "}
-                <strong>{debug.geocache_count}</strong> geocache entries
-                {debug.updated_at && (
-                  <> · last updated {new Date(debug.updated_at).toLocaleString()}</>
-                )}
-                {debug.is_stale && (
-                  <span className="text-amber-600"> (stale)</span>
-                )}
-              </>
-            ) : (
-              <span className="text-zinc-500">No data yet — click Refresh to populate</span>
-            )}
-          </div>
-          <div className="text-zinc-400 text-xs">
-            {debug.on_vercel ? "Vercel" : "local"} ·{" "}
-            {debug.blob_configured ? "Blob storage" : `file: ${debug.local_path}`}
-            {" · "}
-            <a href="/api/debug" target="_blank" className="underline">
-              /api/debug
-            </a>
-          </div>
-        </section>
-      )}
-
+      {/* Token input */}
       <section className="space-y-2">
         <label className="block text-sm font-semibold">Admin token</label>
         <input
@@ -185,82 +90,149 @@ export default function AdminPage() {
         />
       </section>
 
-      <section className="space-y-2">
+      {/* Reload button */}
+      <section>
         <button
-          onClick={refresh}
-          disabled={busy}
+          onClick={loadStatus}
+          disabled={loading}
           className="rounded bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-4 py-2 font-semibold disabled:opacity-50"
         >
-          {busy ? "Refreshing…" : "Refresh now"}
+          {loading ? "Loading…" : "Reload status"}
         </button>
-        {busy && (
-          <div className="text-sm text-zinc-500 space-y-1">
-            <p>
-              Scraping FIFe (~25 pages) + TICA, then geocoding and fetching show details (1 req/s each).
-              Expect 3–5 minutes on a cold store.
-            </p>
-            <p className="font-mono tabular-nums">
-              {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")} elapsed
-            </p>
-          </div>
-        )}
-        {err && (
-          <pre className="text-rose-600 text-sm mt-2 whitespace-pre-wrap rounded bg-rose-50 dark:bg-rose-950 p-2">
-            {err}
-          </pre>
-        )}
       </section>
 
-      {last && (
-        <section>
-          <h2 className="font-semibold mb-2">Last run</h2>
-          <ul className="text-sm space-y-1">
-            {last.map((r) => (
-              <li key={r.source}>
-                <strong>{r.source}</strong>:{" "}
-                {r.ok
-                  ? `+${r.inserted} new, ${r.updated} updated, ${r.geocoded} geocoded`
-                  : `error — ${r.error}`}
-              </li>
-            ))}
-          </ul>
-        </section>
+      {err && (
+        <pre className="text-rose-600 text-sm whitespace-pre-wrap rounded bg-rose-50 dark:bg-rose-950 p-2">
+          {err}
+        </pre>
       )}
 
-      <section>
-        <h2 className="font-semibold mb-2">Recent runs</h2>
-        {runs.length === 0 ? (
-          <p className="text-sm text-zinc-500">No runs recorded yet.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="text-left text-zinc-500 border-b border-zinc-200 dark:border-zinc-800">
-              <tr>
-                <th className="py-1">Source</th>
-                <th className="py-1">Started</th>
-                <th className="py-1">Status</th>
-                <th className="py-1">Seen</th>
-                <th className="py-1">Changed</th>
-                <th className="py-1">Error</th>
-              </tr>
-            </thead>
-            <tbody>
-              {runs.map((r) => (
-                <tr
-                  key={r.id}
-                  className="border-b border-zinc-100 dark:border-zinc-900"
-                >
-                  <td className="py-1">{r.source}</td>
-                  <td className="py-1">{r.started_at}</td>
-                  <td className="py-1">{r.status}</td>
-                  <td className="py-1">{r.items_seen}</td>
-                  <td className="py-1">{r.items_changed}</td>
-                  <td className="py-1 text-rose-600">{r.error}</td>
+      {status && (
+        <>
+          {/* Data age */}
+          <section className="rounded border border-zinc-200 dark:border-zinc-800 p-4 space-y-1">
+            <div className="font-semibold text-sm">Store last updated</div>
+            <div className="text-2xl font-bold">{dataAge(status.updated_at)}</div>
+            <div className="text-xs text-zinc-500">
+              {new Date(status.updated_at).toLocaleString()}
+            </div>
+          </section>
+
+          {/* Per-org coverage */}
+          <section className="space-y-2">
+            <h2 className="font-semibold">Coverage by organisation</h2>
+            <table className="w-full text-sm">
+              <thead className="text-left text-zinc-500 border-b border-zinc-200 dark:border-zinc-800">
+                <tr>
+                  <th className="py-1 pr-4">Org</th>
+                  <th className="py-1 pr-4">Shows</th>
+                  <th className="py-1 pr-4">Detail fetched</th>
+                  <th className="py-1">Geocoded</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+              </thead>
+              <tbody>
+                {status.orgs.map((org) => (
+                  <tr
+                    key={org.source}
+                    className="border-b border-zinc-100 dark:border-zinc-900"
+                  >
+                    <td className="py-2 pr-4">
+                      <span
+                        className={
+                          org.source === "FIFe"
+                            ? "inline-block rounded px-2 py-0.5 text-xs font-semibold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
+                            : "inline-block rounded px-2 py-0.5 text-xs font-semibold bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200"
+                        }
+                      >
+                        {org.source}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-4 font-mono">{org.show_count}</td>
+                    <td className="py-2 pr-4">
+                      {org.detail_fetched}/{org.show_count}{" "}
+                      <span className="text-zinc-500">
+                        ({pct(org.detail_fetched, org.show_count)})
+                      </span>
+                    </td>
+                    <td className="py-2">
+                      {org.geocoded}/{org.show_count}{" "}
+                      <span className="text-zinc-500">
+                        ({pct(org.geocoded, org.show_count)})
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
+          {/* GitHub Actions link */}
+          <section className="text-sm">
+            <a
+              href="https://github.com/JKrag/cat-tools/actions/workflows/scrape.yml"
+              target="_blank"
+              rel="noreferrer"
+              className="underline text-blue-600 dark:text-blue-400"
+            >
+              View scrape workflow runs on GitHub Actions ↗
+            </a>
+          </section>
+
+          {/* Scrape run history */}
+          <section>
+            <h2 className="font-semibold mb-2">
+              Scrape run history ({status.scrape_runs.length})
+            </h2>
+            {status.scrape_runs.length === 0 ? (
+              <p className="text-sm text-zinc-500">No runs recorded yet.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-left text-zinc-500 border-b border-zinc-200 dark:border-zinc-800">
+                    <tr>
+                      <th className="py-1 pr-3">Source</th>
+                      <th className="py-1 pr-3">Started</th>
+                      <th className="py-1 pr-3">Status</th>
+                      <th className="py-1 pr-3">Seen</th>
+                      <th className="py-1 pr-3">Changed</th>
+                      <th className="py-1">Error</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {status.scrape_runs.map((r) => (
+                      <tr
+                        key={r.id}
+                        className="border-b border-zinc-100 dark:border-zinc-900"
+                      >
+                        <td className="py-1 pr-3">{r.source}</td>
+                        <td className="py-1 pr-3 whitespace-nowrap">
+                          {new Date(r.started_at).toLocaleString()}
+                        </td>
+                        <td className="py-1 pr-3">
+                          <span
+                            className={
+                              r.status === "ok"
+                                ? "text-green-600"
+                                : "text-rose-600"
+                            }
+                          >
+                            {r.status}
+                          </span>
+                        </td>
+                        <td className="py-1 pr-3 font-mono">{r.items_seen}</td>
+                        <td className="py-1 pr-3 font-mono">{r.items_changed}</td>
+                        <td className="py-1 text-rose-600 max-w-xs truncate">
+                          {r.error}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </>
+      )}
     </main>
   );
 }

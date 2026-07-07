@@ -35,8 +35,13 @@ export const EMPTY_STORE: CatzStore = {
   updated_at: new Date(0).toISOString(),
 };
 
+// The app never scrapes — a scheduled GitHub Actions job owns all writes
+// (see docs/adr/0001). Blob reads are cached briefly so a burst of requests
+// doesn't re-fetch the blob on every call.
+const READ_CACHE_MS = 5 * 60 * 1000;
+
 let _cachedStore: CatzStore | null = null;
-let _refreshing = false;
+let _cachedAt = 0;
 
 export async function readStore(): Promise<CatzStore | null> {
   const token = getBlobToken();
@@ -64,6 +69,7 @@ export async function readStore(): Promise<CatzStore | null> {
 
 export async function writeStore(store: CatzStore): Promise<void> {
   _cachedStore = store;
+  _cachedAt = Date.now();
   const token = getBlobToken();
   if (token) {
     await put(BLOB_KEY, JSON.stringify(store), {
@@ -84,7 +90,9 @@ export function isStale(store: CatzStore): boolean {
 // Applies all schema migrations in one pass. Returns true if anything changed.
 // Uses Record<string, unknown> casts for org-specific fields because old blobs
 // won't have those keys — TypeScript's `in` guard would narrow to `never` here.
-function migrateStore(store: CatzStore): boolean {
+// Persisting a migrated store is the scrape job's responsibility; the app only
+// migrates in memory for serving.
+export function migrateStore(store: CatzStore): boolean {
   let changed = false;
   for (const show of store.shows) {
     // Country normalization — fixes data written before normalization was deployed
@@ -110,42 +118,17 @@ function migrateStore(store: CatzStore): boolean {
 }
 
 export async function getOrLoadStore(): Promise<CatzStore> {
-  if (_cachedStore && !isStale(_cachedStore)) return _cachedStore;
+  if (_cachedStore && Date.now() - _cachedAt < READ_CACHE_MS) return _cachedStore;
 
   const stored = await readStore();
 
   if (!stored) {
     // Blob read failed but we have a warm in-memory copy — prefer it over empty
-    if (_cachedStore) return _cachedStore;
-    // Truly no data — seed via blocking scrape so the first visitor gets results
-    const { runAllScrapers } = await import("./scrapers/run");
-    await runAllScrapers();
-    return (await readStore()) ?? { ...EMPTY_STORE };
+    return _cachedStore ?? { ...EMPTY_STORE };
   }
 
-  const migrated = migrateStore(stored);
+  migrateStore(stored);
   _cachedStore = stored;
-  if (migrated) void writeStore(stored);
-
-  if (isStale(stored) && !_refreshing) {
-    _refreshing = true;
-    const doRefresh = async () => {
-      try {
-        const { runAllScrapers } = await import("./scrapers/run");
-        await runAllScrapers();
-      } catch (e) {
-        console.error("background refresh failed:", e);
-      } finally {
-        _refreshing = false;
-      }
-    };
-    try {
-      const { waitUntil } = await import("@vercel/functions");
-      waitUntil(doRefresh());
-    } catch {
-      void doRefresh();
-    }
-  }
-
+  _cachedAt = Date.now();
   return stored;
 }

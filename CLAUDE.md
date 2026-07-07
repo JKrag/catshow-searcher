@@ -47,9 +47,18 @@ npm run scrape:fife   # calls fetchFife() and prints count + date range
 npm run scrape:tica   # calls fetchTica() and prints count + date range
 ```
 
-Scripts live in `scripts/`. Run via Node's `--experimental-strip-types` (Node 22+) —
-no extra dependencies needed. Use after any change to the scraper files that affects
-network behaviour.
+Scripts live in `scripts/` and run via `tsx` (devDependency). Use after any change
+to the scraper files that affects network behaviour.
+
+The full pipeline (scrape → detail fetch → geocode → persist) runs via
+`npm run scrape:all` — locally it writes `.data/catz.json`; with
+`BLOB_READ_WRITE_TOKEN` set it writes the production blob. A scheduled GitHub
+Actions workflow (`.github/workflows/scrape.yml`) runs it daily; the app itself
+never scrapes (see `docs/adr/0001`). For a quick smoke run:
+
+```
+npm run scrape:all -- --geocode-budget 5 --detail-budget 3
+```
 
 ## Tool usage
 

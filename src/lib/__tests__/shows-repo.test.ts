@@ -7,6 +7,7 @@ import {
   setTicaDetail,
   listFifeShowsMissingDetail,
   listTicaShowsMissingDetail,
+  listShows,
 } from "../shows-repo";
 
 function makeStore(): CatzStore {
@@ -195,6 +196,46 @@ describe("upsertShows", () => {
 
     expect(result.inserted).toBe(1);
     expect(result.updated).toBe(1);
+  });
+});
+
+describe("listShows – in-progress show visibility", () => {
+  it("keeps a show that started before today but ends today-or-later (end_date >= from)", () => {
+    const store = makeStore();
+    // Show started yesterday, ends tomorrow — should remain visible with from=today
+    upsertShows(store, [
+      {
+        source: "FIFe",
+        source_id: "in-progress",
+        title: "In-Progress Show",
+        start_date: "2026-07-06", // yesterday relative to 2026-07-07
+        end_date: "2026-07-08",   // tomorrow
+        country: "Denmark",
+        city: "Copenhagen",
+      },
+    ]);
+
+    const results = listShows(store, { from: "2026-07-07" });
+    expect(results).toHaveLength(1);
+    expect(results[0].source_id).toBe("in-progress");
+  });
+
+  it("hides a show that ended before today", () => {
+    const store = makeStore();
+    upsertShows(store, [
+      {
+        source: "FIFe",
+        source_id: "past-show",
+        title: "Past Show",
+        start_date: "2026-07-04",
+        end_date: "2026-07-05", // ended before today (2026-07-07)
+        country: "Denmark",
+        city: "Copenhagen",
+      },
+    ]);
+
+    const results = listShows(store, { from: "2026-07-07" });
+    expect(results).toHaveLength(0);
   });
 });
 

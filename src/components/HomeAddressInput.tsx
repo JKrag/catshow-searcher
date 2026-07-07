@@ -76,6 +76,19 @@ export function HomeAddressInput({ home, setHome }: Props) {
         </form>
       )}
       {err && <div className="text-[var(--tica)] text-xs">{err}</div>}
+      <p className="text-[11px] text-foreground/50 leading-snug">
+        Your address is used only to calculate distances. It is stored in your
+        browser — not on our servers — and sent to{" "}
+        <a
+          href="https://nominatim.openstreetmap.org"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline underline-offset-2 hover:text-foreground/70"
+        >
+          Nominatim (OpenStreetMap)
+        </a>{" "}
+        once to look up coordinates.
+      </p>
     </div>
   );
 }

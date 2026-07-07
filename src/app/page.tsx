@@ -6,6 +6,7 @@ import { HomeAddressInput } from "@/components/HomeAddressInput";
 import { ShowList } from "@/components/ShowList";
 import { ShowCalendar } from "@/components/ShowCalendar";
 import { ShowMap } from "@/components/ShowMap";
+import { DataFreshness } from "@/components/DataFreshness";
 import { useHome } from "@/components/home";
 import { useShows } from "@/hooks/useShows";
 import { useRoutes } from "@/hooks/useRoutes";
@@ -24,7 +25,7 @@ export default function VisitorPage() {
   // `homeCountryAliases(home.display_name)` (see src/components/home.ts).
   // Use the `ready` flag from useHome() to wait for localStorage hydration.
 
-  const { shows, countries, loading } = useShows(filters);
+  const { shows, countries, loading, stale, updatedAt } = useShows(filters);
   const routes = useRoutes(shows, home);
 
   const annotated: ShowWithDistance[] = useMemo(() => {
@@ -118,27 +119,30 @@ export default function VisitorPage() {
                 );
               })}
             </div>
-            <div
-              className={`text-xs inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ring-1 ${
-                !loading && visible.length === 0 && annotated.length > 0
-                  ? "bg-amber-100 dark:bg-amber-950/40 ring-amber-300/70 dark:ring-amber-700/50 text-amber-800 dark:text-amber-300"
-                  : "bg-[var(--muted-soft)] ring-border text-muted-foreground"
-              }`}
-              aria-live="polite"
-            >
-              {loading ? (
-                <>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse" />
-                  Loading…
-                </>
-              ) : (
-                <>
-                  <span className="font-semibold text-foreground">{visible.length}</span>
-                  {" of "}
-                  <span className="font-semibold text-foreground">{annotated.length}</span>{" "}
-                  show{annotated.length === 1 ? "" : "s"}
-                </>
-              )}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div
+                className={`text-xs inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ring-1 ${
+                  !loading && visible.length === 0 && annotated.length > 0
+                    ? "bg-amber-100 dark:bg-amber-950/40 ring-amber-300/70 dark:ring-amber-700/50 text-amber-800 dark:text-amber-300"
+                    : "bg-[var(--muted-soft)] ring-border text-muted-foreground"
+                }`}
+                aria-live="polite"
+              >
+                {loading ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse" />
+                    Loading…
+                  </>
+                ) : (
+                  <>
+                    <span className="font-semibold text-foreground">{visible.length}</span>
+                    {" of "}
+                    <span className="font-semibold text-foreground">{annotated.length}</span>{" "}
+                    show{annotated.length === 1 ? "" : "s"}
+                  </>
+                )}
+              </div>
+              <DataFreshness updatedAt={updatedAt} stale={stale} />
             </div>
           </div>
 

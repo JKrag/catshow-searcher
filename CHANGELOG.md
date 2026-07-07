@@ -4,6 +4,79 @@ Brief record of significant changes. Newest first. Each entry covers a PR or log
 
 ---
 
+## Phase 6.1 + 6.2 — Scraping moves to GitHub Actions; admin becomes a dashboard
+
+**Why:** production had not successfully scraped since 2026-05-08 — the full
+pipeline (pagination + detail fetch + geocoding at ~1 req/s) takes 10–20 min and
+cannot fit any Vercel function lifetime, so every `waitUntil` background refresh
+died silently. Root cause of both #27 and #28. See `docs/adr/0001`.
+
+**Scrape pipeline (ADR 0001, issue #27)**
+- New `scripts/scrape-all.ts` (`npm run scrape:all`): full pipeline — calendar
+  scrape → detail fetch → geocode → persist. Writes the blob when
+  `BLOB_READ_WRITE_TOKEN` is set, else `.data/catz.json`. Optional
+  `--geocode-budget N --detail-budget N` flags for quick smoke runs.
+- New `.github/workflows/scrape.yml`: daily cron (03:23 UTC) + manual dispatch;
+  needs the `BLOB_READ_WRITE_TOKEN` repo secret.
+- `runAllScrapers` budgets now default to unlimited (the script is the only
+  caller); detail data (incl. TICA judges) populates fully in one run.
+- `getOrLoadStore` no longer scrapes: `waitUntil` refresh and the blocking
+  first-run seed are gone, replaced by a 5-minute blob read cache. Migrations
+  persist from the scrape job; the app migrates in memory only.
+- `/api/admin/refresh` deleted; `@vercel/functions` dependency dropped.
+- Scripts now run via `tsx` (Node's `--experimental-strip-types` cannot resolve
+  the extensionless value imports inside `src/`).
+
+**Admin status dashboard (6.2)**
+- New `GET /api/admin/status`: store freshness, per-org counts, detail/geocode
+  coverage, scrape-run history. Bearer-protected when `CATZ_ADMIN_TOKEN` is set.
+- Admin page rewritten read-only: data age, coverage table, run history, link
+  to the GitHub Actions workflow. No way to trigger scraping from the app.
+- `deriveStoreStats` pure helper + 8 unit tests.
+
+---
+
+## Phase 6.5 + 6.6 — Privacy notice & documentation truth
+
+- `HomeAddressInput`: transparency note per #24 — address is used only for
+  distances, stored in localStorage, sent once to Nominatim, never stored
+  server-side.
+- README rewritten: it still described the abandoned Postgres/Neon + docker
+  setup. Now documents the blob store, the Actions scrape pipeline, seeding via
+  `scrape:all`, persona routes, and testing. `docker-compose.yml` deleted;
+  `.env.local.example` added (with a `.gitignore` exception).
+- New docs from the planning session: `CONTEXT.md` (domain glossary),
+  ADR 0001 (scrape in Actions), ADR 0002 (past shows kept, hidden by default).
+
+---
+
+## Phase 6.3 + 6.4 — Future shows by default & data-freshness indicator
+
+**Future shows by default (issue #25, ROADMAP 6.3)**
+- API (`/api/shows`) now defaults to `from=today` (UTC) when neither `from` nor
+  `include_past=1` is provided, so only ongoing or upcoming shows are returned by default.
+- `listShows` already compares `end_date >= from`, so a show currently in progress
+  (started before today, ending today-or-later) is not hidden.
+- New pure function `resolveFromFilter(sp, today?)` in `src/lib/api-filter.ts` handles
+  all three cases (explicit from / include_past=1 / default). Covered by 4 unit tests.
+- UI: "Include past shows" checkbox added to the date-range section of `FilterSidebar`,
+  present in both `visitor` and `full` variants (default unchecked). An explicit from-date
+  always overrides the toggle.
+- `Filters` type updated with `includePast: boolean`; `defaultFilters` and
+  `defaultVisitorFilters` initialise it to `false`.
+
+**Data-freshness indicator (ROADMAP 6.4)**
+- API response now includes `updated_at` (ISO string from the blob store) alongside `stale`.
+- `useShows` hook exposes `updatedAt` and `stale` to pages.
+- New component `src/components/DataFreshness.tsx`: shows "Updated X ago" with a tooltip
+  containing the absolute timestamp. Amber-styled when `stale=true`. Returns null for
+  missing or epoch-zero timestamps (never-scraped store).
+- Rendered on all three persona routes: `/`, `/exhibitor`, and `/organizer` (stub).
+
+**Test count: 73 tests (was 43 before this PR — +30)**
+
+---
+
 ## feat/tica-season-pagination — TICA multi-season fetch
 
 - `fetchTica()` previously fetched only the current season (~144 shows)
