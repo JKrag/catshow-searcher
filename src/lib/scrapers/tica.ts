@@ -186,10 +186,9 @@ function parseJudges(html: string): string[] | null {
   const block = html.match(/class="judges">\s*<label>\s*Judges:\s*<\/label>\s*<span>([\s\S]*?)<\/span>/);
   if (!block) return null;
 
-  const text = block[1]
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/&nbsp;/g, " ")
-    .replace(/<[^>]+>/g, "");
+  const text = parse(
+    `<div>${block[1].replace(/<br\s*\/?>/gi, "\n").replace(/&nbsp;/g, " ")}</div>`,
+  ).textContent;
 
   const seen = new Set<string>();
   const judges: string[] = [];
