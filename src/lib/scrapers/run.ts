@@ -23,6 +23,12 @@ export interface ScrapeOutcome {
   error?: string;
 }
 
+export interface ScrapeResult {
+  outcomes: ScrapeOutcome[];
+  // False means the whole run's work was lost — callers must treat it as failure
+  persisted: boolean;
+}
+
 async function runOne(
   source: Org,
   fetcher: () => Promise<NormalisedShow[]>,
@@ -129,7 +135,7 @@ async function fetchTicaDetails(
 export async function runAllScrapers(
   geocodeBudget = Infinity,
   detailBudget = Infinity,
-): Promise<ScrapeOutcome[]> {
+): Promise<ScrapeResult> {
   const existing = (await readStore()) ?? { ...EMPTY_STORE };
   const store: CatzStore = {
     ...existing,
@@ -148,12 +154,13 @@ export async function runAllScrapers(
   await fetchTicaDetails(store, detailBudget);
 
   store.updated_at = new Date().toISOString();
+  let persisted = true;
   try {
     await writeStore(store);
   } catch (e) {
     console.error("writeStore failed:", e);
-    // Scrape results are still valid even if persist failed; caller sees outcomes
+    persisted = false;
   }
 
-  return [fife, tica];
+  return { outcomes: [fife, tica], persisted };
 }

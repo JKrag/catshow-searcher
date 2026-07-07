@@ -29,7 +29,7 @@ const target = process.env.BLOB_READ_WRITE_TOKEN ? "Vercel blob" : ".data/catz.j
 console.log(`Running full scrape pipeline → ${target}`);
 const t0 = Date.now();
 
-const outcomes = await runAllScrapers(geocodeBudget, detailBudget);
+const { outcomes, persisted } = await runAllScrapers(geocodeBudget, detailBudget);
 
 for (const o of outcomes) {
   if (o.ok) {
@@ -53,4 +53,8 @@ if (store) {
 
 console.log(`Done in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 
+if (!persisted) {
+  console.error("FATAL: store write failed — all scraped data was lost");
+  process.exit(1);
+}
 if (outcomes.some((o) => !o.ok)) process.exit(1);
