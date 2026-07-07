@@ -75,6 +75,7 @@ export async function writeStore(store: CatzStore): Promise<void> {
     await put(BLOB_KEY, JSON.stringify(store), {
       access: "public",
       addRandomSuffix: false,
+      allowOverwrite: true, // @vercel/blob v2 refuses to overwrite by default
       token,
     });
   } else {
