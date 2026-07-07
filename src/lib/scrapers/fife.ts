@@ -1,7 +1,14 @@
 import type { NormalisedFifeShow } from "../types";
 
-const FIFE_ICAL =
-  "https://fifeweb.org/events/list/?tribe_eventcategory%5B0%5D=8&ical=1";
+const FIFE_ICAL_BASE = "https://fifeweb.org/events/category/all-shows/";
+const FIFE_SCRAPE_YEARS_AHEAD = 3;
+const FIFE_MAX_PAGES = 50; // safety cap; real last page is ~49
+
+function fifePageUrl(page: number): string {
+  return page === 1
+    ? `${FIFE_ICAL_BASE}?ical=1`
+    : `${FIFE_ICAL_BASE}page/${page}/?ical=1`;
+}
 
 interface VEvent {
   uid?: string;
@@ -104,37 +111,62 @@ export function parseICal(text: string): VEvent[] {
   return events;
 }
 
+export function normaliseFifeEvent(e: VEvent): NormalisedFifeShow | null {
+  if (!e.uid || !e.dtstart || !e.summary) return null;
+  const start = parseDate(e.dtstart);
+  // FIFe uses exclusive DTEND for all-day events; subtract one day for inclusive end.
+  const endRaw = e.dtend ? parseDate(e.dtend) : start;
+  const end = subtractOneDay(endRaw, start);
+  const loc = e.location ? parseLocation(e.location) : null;
+  return {
+    source: "FIFe",
+    source_id: e.uid,
+    title: e.summary,
+    club: e.organizer ?? null,
+    country: loc?.country ?? null,
+    city: loc?.city ?? null,
+    venue: loc?.full ?? null,
+    start_date: start,
+    end_date: end,
+    url: e.url ?? null,
+    show_type: null,
+    raw: e,
+  };
+}
+
 export async function fetchFife(): Promise<NormalisedFifeShow[]> {
-  const res = await fetch(FIFE_ICAL, {
-    headers: { "User-Agent": "catz/0.1 (cat-show finder)" },
-  });
-  if (!res.ok) throw new Error(`FIFe HTTP ${res.status}`);
-  const text = await res.text();
-  const events = parseICal(text);
-  const shows: NormalisedFifeShow[] = [];
-  for (const e of events) {
-    if (!e.uid || !e.dtstart || !e.summary) continue;
-    const start = parseDate(e.dtstart);
-    // FIFe uses exclusive DTEND for all-day events; subtract one day for inclusive end.
-    const endRaw = e.dtend ? parseDate(e.dtend) : start;
-    const end = subtractOneDay(endRaw, start);
-    const loc = e.location ? parseLocation(e.location) : null;
-    shows.push({
-      source: "FIFe",
-      source_id: e.uid,
-      title: e.summary,
-      club: e.organizer ?? null,
-      country: loc?.country ?? null,
-      city: loc?.city ?? null,
-      venue: loc?.full ?? null,
-      start_date: start,
-      end_date: end,
-      url: e.url ?? null,
-      show_type: null,
-      raw: e,
+  const cutoff = new Date();
+  cutoff.setFullYear(cutoff.getFullYear() + FIFE_SCRAPE_YEARS_AHEAD);
+  const cutoffDate = cutoff.toISOString().slice(0, 10);
+
+  const allShows: NormalisedFifeShow[] = [];
+
+  for (let page = 1; page <= FIFE_MAX_PAGES; page++) {
+    if (page > 1) await new Promise((r) => setTimeout(r, 300));
+
+    const res = await fetch(fifePageUrl(page), {
+      headers: { "User-Agent": "catz/0.1 (cat-show finder)" },
     });
+    if (!res.ok) throw new Error(`FIFe HTTP ${res.status} on page ${page}`);
+
+    const events = parseICal(await res.text());
+    if (events.length === 0) break;
+
+    let hitCutoff = false;
+    for (const e of events) {
+      if (e.dtstart && parseDate(e.dtstart) > cutoffDate) {
+        hitCutoff = true;
+        continue;
+      }
+      const show = normaliseFifeEvent(e);
+      if (!show) continue; // malformed event — skip without stopping pagination
+      allShows.push(show);
+    }
+
+    if (hitCutoff) break;
   }
-  return shows;
+
+  return allShows;
 }
 
 export interface FifeShowDetail {

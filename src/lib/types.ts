@@ -28,6 +28,7 @@ export interface TicaShow extends BaseShow {
   source: "TICA";
   show_format: string | null;
   flyer_url: string | null;
+  judges: string[] | null;
   detail_fetched: boolean;
 }
 

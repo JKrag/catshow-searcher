@@ -9,10 +9,16 @@ Update this file whenever you discover or correct something about how these syst
 
 ### Calendar iCal feed
 
-**URL:** `https://fifeweb.org/events/list/?tribe_eventcategory%5B0%5D=8&ical=1`
+**Canonical URL (page 1):** `https://fifeweb.org/events/category/all-shows/?ical=1`
+**Paginated URL (page N≥2):** `https://fifeweb.org/events/category/all-shows/page/N/?ical=1`
 
-- Returns all upcoming international cat shows as RFC 5545 iCal
-- Fields present per VEVENT: `UID`, `SUMMARY`, `DTSTART`, `DTEND`, `URL`, `LOCATION`, `ORGANIZER`
+Pagination notes:
+- ~49 pages total today; ~30 events per page; feed extends to ~Oct 2035
+- `tribe_paged=N` query param does **not** work — use path-based pagination only
+- The old URL `…/events/list/?tribe_eventcategory%5B0%5D=8&ical=1` only returns page 1
+
+Per-VEVENT fields present: `UID`, `SUMMARY`, `DTSTART`, `DTEND`, `URL`, `LOCATION`, `ORGANIZER`
+
 - `DESCRIPTION` is always **empty** — show type is NOT in the iCal
 - `DTEND` is exclusive (day-after for all-day events) — subtract one day for inclusive end date
 - `SUMMARY` is always just `"International show"` — not the club/event name
@@ -47,13 +53,19 @@ Useful fields extractable by HTML/regex:
 
 **URL:** `https://shows.tica.org/en/component/toes/shows`
 
-- Single HTML page listing all upcoming shows grouped by month under `.show-list`
 - Requires browser-like `User-Agent`; plain curl with short UA gets blocked
 - Structure: `.month-heading` elements set month context; `.show-entry` elements are shows
 - Each `.show-entry` contains: `.date` (day or range), `.address` (city, country), `.club-name`
 - Show ID extracted from `<a rel="…">` — the `rel` attribute value is the numeric TICA show ID
 - Direct link format: `https://shows.tica.org/en/component/toes/shows#show{id}`
 - Date range spanning month boundary (e.g. "30 - 02"): endDay < startDay → increment month
+
+**Season pagination via POST:**
+- Each page covers one TICA season: May 1 of `season_year` through April 30 of `season_year + 1`
+- Current season year is embedded as `<input type="hidden" id="season_year" … value="YYYY">`
+- Fetch any season with `POST /en/component/toes/shows` body `season_year=YYYY`
+- Works for current and future seasons; returns 0 `.show-entry` elements when season is empty
+- "Next Season" / "Previous Season" links on the page call `filterSeason(year)` JS — not plain URLs
 
 ### Per-show detail endpoint
 

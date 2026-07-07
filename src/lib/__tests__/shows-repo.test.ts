@@ -150,7 +150,7 @@ describe("upsertShows", () => {
       },
     ]);
 
-    setTicaDetail(store, "tica-1", "Household Pet", "https://flyer.example.com/x.pdf");
+    setTicaDetail(store, "tica-1", "Household Pet", "https://flyer.example.com/x.pdf", null);
 
     upsertShows(store, [
       {
@@ -231,7 +231,7 @@ describe("listTicaShowsMissingDetail", () => {
       { source: "TICA", source_id: "t1", title: "T1", start_date: "2026-05-01", end_date: "2026-05-01", country: "France", city: "Paris" },
       { source: "TICA", source_id: "t2", title: "T2", start_date: "2026-05-02", end_date: "2026-05-02", country: "Germany", city: "Berlin" },
     ]);
-    setTicaDetail(store, "t1", "All Breed", null);
+    setTicaDetail(store, "t1", "All Breed", null, null);
 
     const pending = listTicaShowsMissingDetail(store);
     expect(pending).toHaveLength(1);

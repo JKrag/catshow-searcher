@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseICal, parseFifeDetail } from "../fife";
+import { parseICal, parseFifeDetail, normaliseFifeEvent } from "../fife";
 
 const SAMPLE_ICAL = `BEGIN:VCALENDAR
 BEGIN:VEVENT
@@ -51,6 +51,76 @@ describe("parseICal", () => {
     const ical = `BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:x\nSUMMARY:Long ti\n tle here\nDTSTART;VALUE=DATE:20260101\nEND:VEVENT\nEND:VCALENDAR`;
     const [e] = parseICal(ical);
     expect(e.summary).toBe("Long title here");
+  });
+});
+
+describe("normaliseFifeEvent", () => {
+  const BASE = {
+    uid: "10001208-123@fifeweb.org",
+    summary: "International show",
+    dtstart: "20260509",
+    dtend: "20260511",
+    url: "https://fifeweb.org/event/international-show-1/",
+    location: "Venue 1234, Copenhagen, 1234, Denmark",
+    organizer: "Cat Club DK",
+  };
+
+  it("returns null when uid is missing", () => {
+    expect(normaliseFifeEvent({ ...BASE, uid: undefined })).toBeNull();
+  });
+
+  it("returns null when dtstart is missing", () => {
+    expect(normaliseFifeEvent({ ...BASE, dtstart: undefined })).toBeNull();
+  });
+
+  it("returns null when summary is missing", () => {
+    expect(normaliseFifeEvent({ ...BASE, summary: undefined })).toBeNull();
+  });
+
+  it("maps required fields correctly", () => {
+    const show = normaliseFifeEvent(BASE)!;
+    expect(show.source).toBe("FIFe");
+    expect(show.source_id).toBe(BASE.uid);
+    expect(show.title).toBe("International show");
+    expect(show.start_date).toBe("2026-05-09");
+    expect(show.club).toBe("Cat Club DK");
+    expect(show.url).toBe(BASE.url);
+    expect(show.show_type).toBeNull();
+  });
+
+  it("subtracts one day from exclusive DTEND", () => {
+    // DTEND 20260511 → inclusive end_date 2026-05-10
+    const show = normaliseFifeEvent(BASE)!;
+    expect(show.end_date).toBe("2026-05-10");
+  });
+
+  it("uses start_date as end_date when DTEND equals DTSTART", () => {
+    const show = normaliseFifeEvent({ ...BASE, dtend: BASE.dtstart })!;
+    expect(show.end_date).toBe("2026-05-09");
+  });
+
+  it("handles missing DTEND by using start_date", () => {
+    const show = normaliseFifeEvent({ ...BASE, dtend: undefined })!;
+    expect(show.end_date).toBe("2026-05-09");
+  });
+
+  it("parses country and city from location", () => {
+    const show = normaliseFifeEvent(BASE)!;
+    expect(show.country).toBe("Denmark");
+    expect(show.city).toBe("Copenhagen");
+    expect(show.venue).toBe(BASE.location);
+  });
+
+  it("sets country/city/venue to null when location is absent", () => {
+    const show = normaliseFifeEvent({ ...BASE, location: undefined })!;
+    expect(show.country).toBeNull();
+    expect(show.city).toBeNull();
+    expect(show.venue).toBeNull();
+  });
+
+  it("sets club to null when organizer is absent", () => {
+    const show = normaliseFifeEvent({ ...BASE, organizer: undefined })!;
+    expect(show.club).toBeNull();
   });
 });
 

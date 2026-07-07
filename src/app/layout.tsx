@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Crimson_Pro } from "next/font/google";
+import { PersonaNav } from "@/components/PersonaNav";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -28,7 +29,10 @@ export default function RootLayout({
       lang="en"
       className={`${spaceGrotesk.variable} ${crimsonPro.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <PersonaNav />
+        {children}
+      </body>
     </html>
   );
 }

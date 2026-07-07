@@ -102,6 +102,7 @@ function migrateStore(store: CatzStore): boolean {
     } else if (show.source === "TICA") {
       if (raw["show_format"] === undefined) { raw["show_format"] = null; changed = true; }
       if (raw["flyer_url"] === undefined) { raw["flyer_url"] = null; changed = true; }
+      if (raw["judges"] === undefined) { raw["judges"] = null; changed = true; }
       if (raw["detail_fetched"] === undefined) { raw["detail_fetched"] = false; changed = true; }
     }
   }

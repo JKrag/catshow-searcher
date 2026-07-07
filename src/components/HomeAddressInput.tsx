@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useHome } from "./home";
+import type { HomeAddress } from "./home";
 
-export function HomeAddressInput() {
-  const [home, setHome] = useHome();
+interface Props {
+  home: HomeAddress | null;
+  setHome: (h: HomeAddress | null) => void;
+}
+
+export function HomeAddressInput({ home, setHome }: Props) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc --noEmit *)",
+      "Bash(npm test *)",
+      "mcp__claude-in-chrome__tabs_context_mcp",
+      "Bash(curl *shows.tica.org*)",
+      "Bash(curl *fifeweb.org*)"
+    ]
+  }
+}

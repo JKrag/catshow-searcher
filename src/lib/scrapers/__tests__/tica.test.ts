@@ -95,3 +95,58 @@ describe("parseTicaDetail", () => {
     expect(parseTicaDetail("<html></html>").flyer_url).toBeNull();
   });
 });
+
+describe("parseTicaDetail — judges", () => {
+  const withJudges = (inner: string) => `
+    <div class="judges">
+      <label>Judges:</label>
+      <span>${inner}</span>
+    </div>`;
+
+  it("parses AB and SP judges across days", () => {
+    const html = withJudges(
+      "Saturday<br/>&nbsp;&nbsp;&nbsp;&nbsp;Robin Higgins(AB), Barbara Ray(AB)<br/>" +
+      "Sunday<br/>&nbsp;&nbsp;&nbsp;&nbsp;Barbara Ray(AB), Andre Grenier(SP)<br/>"
+    );
+    const judges = parseTicaDetail(html).judges!;
+    expect(judges).toContain("Robin Higgins(AB)");
+    expect(judges).toContain("Barbara Ray(AB)");
+    expect(judges).toContain("Andre Grenier(SP)");
+  });
+
+  it("deduplicates judges appearing on multiple days", () => {
+    const html = withJudges(
+      "Saturday<br/>Barbara Ray(AB)<br/>Sunday<br/>Barbara Ray(AB)<br/>"
+    );
+    const judges = parseTicaDetail(html).judges!;
+    expect(judges.filter((j) => j === "Barbara Ray(AB)")).toHaveLength(1);
+  });
+
+  it("strips AM/PM session prefix from first name on a line", () => {
+    const html = withJudges(
+      "Saturday<br/>&nbsp;&nbsp;&nbsp;&nbsp;AM: Yvonne Patrick(AB), Sharon Kalani(AB)<br/>" +
+      "&nbsp;&nbsp;&nbsp;&nbsp;PM: Ellen Crockett(AB)<br/>"
+    );
+    const judges = parseTicaDetail(html).judges!;
+    expect(judges).toContain("Yvonne Patrick(AB)");
+    expect(judges).toContain("Sharon Kalani(AB)");
+    expect(judges).toContain("Ellen Crockett(AB)");
+    expect(judges.some((j) => j.startsWith("AM:"))).toBe(false);
+  });
+
+  it("handles accented and hyphenated names", () => {
+    const html = withJudges("Saturday<br/>Åsa Broing(AB), Andreas Kretschmer-Kraiczek(AB)<br/>");
+    const judges = parseTicaDetail(html).judges!;
+    expect(judges).toContain("Åsa Broing(AB)");
+    expect(judges).toContain("Andreas Kretschmer-Kraiczek(AB)");
+  });
+
+  it("returns null when judges block is absent", () => {
+    expect(parseTicaDetail("<html></html>").judges).toBeNull();
+  });
+
+  it("returns null for Show comments block (same CSS class)", () => {
+    const html = `<div class="judges"><label>Show comments:</label><span>Some text</span></div>`;
+    expect(parseTicaDetail(html).judges).toBeNull();
+  });
+});

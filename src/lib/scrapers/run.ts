@@ -109,12 +109,12 @@ async function fetchTicaDetails(
   for (const show of pending) {
     try {
       const detail = await fetchTicaDetail(show.source_id);
-      setTicaDetail(store, show.source_id, detail.show_format, detail.flyer_url);
+      setTicaDetail(store, show.source_id, detail.show_format, detail.flyer_url, detail.judges);
       fetched++;
     } catch (e) {
       console.warn(`TICA detail fetch failed for ${show.source_id}:`, e);
       // Mark as fetched even on error to avoid infinite retry loops
-      setTicaDetail(store, show.source_id, null, null);
+      setTicaDetail(store, show.source_id, null, null, null);
     }
     // Rate limit — same courtesy as geocoding
     await new Promise((resolve) => setTimeout(resolve, 1000));

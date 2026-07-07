@@ -39,6 +39,7 @@ export default function AdminPage() {
   const [token, setToken] = useState("");
   const [runs, setRuns] = useState<Run[]>([]);
   const [busy, setBusy] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
   const [last, setLast] = useState<RefreshResult[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [debug, setDebug] = useState<DebugInfo | null>(null);
@@ -53,12 +54,27 @@ export default function AdminPage() {
 
   async function loadDebug() {
     try {
-      const res = await fetch("/api/debug");
+      const res = await fetch("/api/debug", { cache: "no-store" });
       if (res.ok) setDebug(await res.json());
     } catch {
       // debug is best-effort
     }
   }
+
+  // Elapsed timer while scrape is running
+  useEffect(() => {
+    if (!busy) { setElapsed(0); return; }
+    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [busy]);
+
+  // Poll debug endpoint every 5s while busy so the store status updates as soon as the scrape lands
+  useEffect(() => {
+    if (!busy) return;
+    const id = setInterval(loadDebug, 5000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busy]);
 
   async function loadRuns() {
     try {
@@ -178,9 +194,15 @@ export default function AdminPage() {
           {busy ? "Refreshing…" : "Refresh now"}
         </button>
         {busy && (
-          <p className="text-sm text-zinc-500">
-            Fetching FIFe + TICA and geocoding new shows via Nominatim (1 req/s). First run takes 1–2 minutes — please wait.
-          </p>
+          <div className="text-sm text-zinc-500 space-y-1">
+            <p>
+              Scraping FIFe (~25 pages) + TICA, then geocoding and fetching show details (1 req/s each).
+              Expect 3–5 minutes on a cold store.
+            </p>
+            <p className="font-mono tabular-nums">
+              {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")} elapsed
+            </p>
+          </div>
         )}
         {err && (
           <pre className="text-rose-600 text-sm mt-2 whitespace-pre-wrap rounded bg-rose-50 dark:bg-rose-950 p-2">
