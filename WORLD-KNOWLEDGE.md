@@ -83,6 +83,12 @@ Useful fields extractable by HTML/regex:
 
 - `flyer_url` is real and populated for European shows (Danish, Dutch, UK shows confirmed)
 - Rate limit: 1 req/sec is safe
+- Some show IDs return **HTTP 500** persistently (server-side; e.g. ids 3250, 3391,
+  3482, 3486, 3487 in July 2026). Treat as "no detail available" and mark fetched —
+  retrying does not help
+- Judges block: `<div class="judges">` on the detail endpoint. Names are stored with
+  ring suffix, e.g. `"Yukimasa Hattori(AB)"`. Far-future shows often have no judges
+  published yet (~40% of upcoming shows at any time)
 
 ---
 
@@ -94,6 +100,19 @@ Useful fields extractable by HTML/regex:
 - Requires a descriptive `User-Agent` with contact info
 - Results cached in `store.geocode_cache` (keyed by query string) to avoid repeat lookups
 - Query strategy: try `venue` string first, fall back to `city + country`
+
+---
+
+## Vercel Blob — data store
+
+- `put()` on an existing pathname **throws** unless `allowOverwrite: true` is passed
+  (`@vercel/blob` v2 default). Bit us in the first Actions scrape run: 39 min of work
+  discarded at the final write (fixed in PR #31)
+- After an overwrite, reading the blob's public URL can return the **old content for
+  up to ~60 s** (edge-cache propagation). The scrape script's post-write summary may
+  therefore show stale numbers — trust the workflow log's insert counts instead
+- The app additionally caches blob reads in memory for 5 min (`READ_CACHE_MS` in
+  `store.ts`), so freshly scraped data can take a few minutes to appear on the site
 
 ---
 
