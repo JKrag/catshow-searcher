@@ -177,9 +177,6 @@ export function ShowList({ shows, homeSet, variant = "full", total }: Props) {
                 <tr className="transition-colors hover:bg-[var(--muted-soft)]/50">
                   <td colSpan={homeSet ? 6 : 5} className="pb-2.5 px-4 pt-0">
                     <div className="flex flex-wrap items-baseline gap-1">
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">
-                        Judges
-                      </span>
                       {judges.map((j, i) => {
                         const { name, ring } = parseJudge(j);
                         return (
