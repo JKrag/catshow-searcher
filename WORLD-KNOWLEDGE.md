@@ -45,12 +45,30 @@ Useful fields extractable by HTML/regex:
 - Some shows have no organizer website — JSON-LD `url` key will be absent or empty
 - Rate limit: be polite, 1 req/sec is safe
 
+### Show separation rule (FIFe Show Rules §1.4, current as of 2026)
+
+Cornerstone rule for the future organizer view's conflict checking:
+
+- Shows by different FIFe Members on the **same day** must be at least
+  **400 km by road** apart (road distance, not straight-line — OSRM measures
+  exactly this).
+- Only exact **date collisions** count. Older rule versions had an "N weeks"
+  separation window — that no longer exists; do not model one.
+- The show **first applied for** takes priority.
+- Only shows with a fixed date, place **and postal code** are protected by the
+  rule. A show announced without a fixed place (or without a postal code) gets
+  no protection — and will be rejected if its later-announced location falls
+  within 400 km of an already-accepted same-day show.
+- Exception: same-day shows closer than 400 km are allowed if the Members
+  agree in writing, filed with the FIFe Secretary ≥ 2 months before the date.
+
 ### Show locations are mutable — never treat a geocode as final
 
-- FIFe has a separation rule (~300 km / 2–3 weeks between shows), so clubs book
-  years ahead — often before any hall is secured — and announce a placeholder or
-  strategically "blocking" city (near a border or the country's centre) to
-  reserve the slot. The real venue can arrive a year+ later.
+- Because of §1.4, clubs book years ahead — often before any hall is secured —
+  and announce a placeholder or strategically "blocking" city (near a border or
+  the country's centre) to reserve the slot. The real venue can arrive a year+
+  later. (Note per §1.4: a place without a postal code isn't actually protected,
+  but the practice persists.)
 - Placeholder venue strings exist in the feed, e.g.
   `"not yet fixed, not yet fixed, Finland"` (15 shows at once in July 2026);
   the LOCATION parser then also yields `city = "not yet fixed"`.
