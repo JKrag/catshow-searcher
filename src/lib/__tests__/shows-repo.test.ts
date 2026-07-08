@@ -5,6 +5,7 @@ import {
   upsertShows,
   setFifeDetail,
   setTicaDetail,
+  setShowGeocode,
   listFifeShowsMissingDetail,
   listTicaShowsMissingDetail,
   listShows,
@@ -277,5 +278,80 @@ describe("listTicaShowsMissingDetail", () => {
     const pending = listTicaShowsMissingDetail(store);
     expect(pending).toHaveLength(1);
     expect(pending[0].source_id).toBe("t2");
+  });
+});
+
+describe("upsertShows — re-geocode on location change", () => {
+  const base = {
+    source: "FIFe" as const,
+    source_id: "fife-move",
+    title: "Moving Show",
+    start_date: "2027-05-01",
+    end_date: "2027-05-02",
+    url: "https://fifeweb.org/event/9",
+    country: "Finland",
+    city: "not yet fixed",
+    venue: "not yet fixed, not yet fixed, Finland",
+  };
+
+  function geocodedStore(): CatzStore {
+    const store = makeStore();
+    upsertShows(store, [base]);
+    setShowGeocode(store, store.shows[0].id, 64.9, 26.0, "country");
+    return store;
+  }
+
+  it("clears coordinates when the venue changes", () => {
+    const store = geocodedStore();
+    upsertShows(store, [
+      { ...base, venue: "Messukeskus, Helsinki, Finland", city: "Helsinki" },
+    ]);
+    const show = store.shows[0];
+    expect(show.lat).toBeNull();
+    expect(show.lng).toBeNull();
+    expect(show.geo_precision).toBeNull();
+  });
+
+  it("clears coordinates when only the city changes", () => {
+    const store = geocodedStore();
+    upsertShows(store, [{ ...base, city: "Helsinki" }]);
+    expect(store.shows[0].lat).toBeNull();
+  });
+
+  it("clears coordinates when only the country changes", () => {
+    const store = geocodedStore();
+    upsertShows(store, [{ ...base, country: "Sweden" }]);
+    expect(store.shows[0].lat).toBeNull();
+  });
+
+  it("keeps coordinates when the location is unchanged", () => {
+    const store = geocodedStore();
+    upsertShows(store, [{ ...base, title: "Renamed Show" }]);
+    const show = store.shows[0];
+    expect(show.lat).toBe(64.9);
+    expect(show.lng).toBe(26.0);
+    expect(show.geo_precision).toBe("country");
+    expect(show.title).toBe("Renamed Show");
+  });
+
+  it("does not treat country normalization as a move", () => {
+    const store = makeStore();
+    upsertShows(store, [{ ...base, country: "Suomi" }]); // normalizes to Finland
+    setShowGeocode(store, store.shows[0].id, 64.9, 26.0, "country");
+    upsertShows(store, [{ ...base, country: "Suomi" }]);
+    expect(store.shows[0].lat).toBe(64.9);
+  });
+
+  it("still preserves detail fields when a show moves (TICA)", () => {
+    const store = makeStore();
+    const tica = { ...base, source: "TICA" as const, source_id: "tica-move" };
+    upsertShows(store, [tica]);
+    setShowGeocode(store, store.shows[0].id, 64.9, 26.0, "city");
+    setTicaDetail(store, "tica-move", "Championship", null, ["A Judge(AB)"]);
+    upsertShows(store, [{ ...tica, city: "Helsinki" }]);
+    const show = store.shows[0] as TicaShow;
+    expect(show.lat).toBeNull();
+    expect(show.show_format).toBe("Championship");
+    expect(show.judges).toEqual(["A Judge(AB)"]);
   });
 });

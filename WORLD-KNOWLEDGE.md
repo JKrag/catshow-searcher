@@ -45,6 +45,20 @@ Useful fields extractable by HTML/regex:
 - Some shows have no organizer website — JSON-LD `url` key will be absent or empty
 - Rate limit: be polite, 1 req/sec is safe
 
+### Show locations are mutable — never treat a geocode as final
+
+- FIFe has a separation rule (~300 km / 2–3 weeks between shows), so clubs book
+  years ahead — often before any hall is secured — and announce a placeholder or
+  strategically "blocking" city (near a border or the country's centre) to
+  reserve the slot. The real venue can arrive a year+ later.
+- Placeholder venue strings exist in the feed, e.g.
+  `"not yet fixed, not yet fixed, Finland"` (15 shows at once in July 2026);
+  the LOCATION parser then also yields `city = "not yet fixed"`.
+- Shows also move at short notice when a hall falls through.
+- Consequence: a location change on re-scrape must invalidate the show's
+  stored coordinates (`upsertShows` clears lat/lng/geo_precision when
+  venue/city/country change, so the next geocode pass re-codes it).
+
 ---
 
 ## TICA — shows.tica.org

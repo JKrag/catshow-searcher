@@ -4,6 +4,27 @@ Brief record of significant changes. Newest first. Each entry covers a PR or log
 
 ---
 
+## Re-geocode shows when their location changes
+
+Geocoding was triggered only by `lat == null`, so a show that moved after first
+being geocoded kept its stale pin forever. This is common: FIFe clubs book
+years ahead with placeholder/"blocking" cities (see WORLD-KNOWLEDGE, FIFe
+separation rule) and fix the real venue much later; halls also fall through at
+short notice.
+
+- `upsertShows` now clears `lat`/`lng`/`geo_precision` when an existing show's
+  venue, city, or country changes on re-scrape — it re-enters the same night's
+  geocode pass. The `geocode_cache` (keyed by location string) makes moves to
+  known venues free.
+- Country normalization is applied before comparison, so "Suomi" → "Finland"
+  does not count as a move.
+- 6 new tests (94 total), including detail-field preservation on move.
+
+Also resolves the self-heal half of #36: when a "not yet fixed" placeholder
+becomes a real venue, the show's country-level marker now moves to the hall.
+
+---
+
 ## Geocode fallback chain + map honesty
 
 **Problem:** ~30% of shows (257 at the time) failed geocoding — Nominatim can't

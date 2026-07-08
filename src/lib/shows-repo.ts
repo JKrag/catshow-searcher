@@ -29,12 +29,29 @@ export function upsertShows(
 
     if (idx >= 0) {
       const existing = store.shows[idx];
+      // If the location changed since we geocoded it, clear the coordinates so
+      // the show re-enters the next geocode pass (the geocode_cache makes a
+      // move to a known venue free). Shows do move: FIFe clubs often announce
+      // with a placeholder or "blocking" city years ahead and fix the real
+      // venue much later; halls also fall through at short notice.
+      const moved =
+        existing.venue !== commonFields.venue ||
+        existing.city !== commonFields.city ||
+        existing.country !== commonFields.country;
+      const geoFields = moved
+        ? { lat: null, lng: null, geo_precision: null }
+        : {
+            lat: existing.lat,
+            lng: existing.lng,
+            geo_precision: existing.geo_precision,
+          };
       if (r.source === "FIFe") {
         // Preserve detail fields fetched separately — scraper output never carries them
         const ex = existing as FifeShow;
         store.shows[idx] = {
           ...ex,
           ...commonFields,
+          ...geoFields,
           source: "FIFe",
           show_type: ex.show_type,
           website_url: ex.website_url,
@@ -46,6 +63,7 @@ export function upsertShows(
         store.shows[idx] = {
           ...ex,
           ...commonFields,
+          ...geoFields,
           source: "TICA",
           show_format: ex.show_format,
           flyer_url: ex.flyer_url,
