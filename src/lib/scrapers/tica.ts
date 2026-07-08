@@ -182,14 +182,14 @@ export function parseTicaDetail(html: string): TicaShowDetail {
 }
 
 function parseJudges(html: string): string[] | null {
-  // Target the first <div class="judges"> whose label text is "Judges:" (not "Show comments:")
-  const block = html.match(/class="judges">\s*<label>\s*Judges:\s*<\/label>\s*<span>([\s\S]*?)<\/span>/);
-  if (!block) return null;
-
-  const text = block[1]
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/&nbsp;/g, " ")
-    .replace(/<[^>]+>/g, "");
+  const root = parse(html);
+  const judgesBlock = root.querySelectorAll("div.judges").find((div) => {
+    const label = div.querySelector("label")?.text.trim().toLowerCase();
+    return label === "judges:";
+  });
+  const span = judgesBlock?.querySelector("span");
+  if (!span) return null;
+  const text = span.structuredText.replace(/\u00a0/g, " ");
 
   const seen = new Set<string>();
   const judges: string[] = [];
