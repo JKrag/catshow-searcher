@@ -1,5 +1,5 @@
 import type { CatzStore } from "./store";
-import type { FifeShow, NormalisedShow, Show, ShowFilter, TicaShow } from "./types";
+import type { FifeShow, GeoPrecision, NormalisedShow, Show, ShowFilter, TicaShow } from "./types";
 import { normalizeCountry } from "./normalize-country";
 
 export function upsertShows(
@@ -63,6 +63,7 @@ export function upsertShows(
           ...commonFields,
           lat: null,
           lng: null,
+          geo_precision: null,
           show_type: null,
           website_url: null,
           detail_fetched: false,
@@ -75,6 +76,7 @@ export function upsertShows(
           ...commonFields,
           lat: null,
           lng: null,
+          geo_precision: null,
           show_format: null,
           flyer_url: null,
           judges: null,
@@ -93,11 +95,13 @@ export function setShowGeocode(
   id: number,
   lat: number,
   lng: number,
+  precision: GeoPrecision,
 ) {
   const show = store.shows.find((s) => s.id === id);
   if (show) {
     show.lat = lat;
     show.lng = lng;
+    show.geo_precision = precision;
   }
 }
 

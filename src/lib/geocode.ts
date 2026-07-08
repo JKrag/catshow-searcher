@@ -1,7 +1,39 @@
+import type { GeoPrecision } from "./types";
+
 export interface GeocodeResult {
   lat: number;
   lng: number;
   display_name: string;
+}
+
+export interface GeocodeCandidate {
+  query: string;
+  precision: GeoPrecision;
+}
+
+// Ordered fallback chain for geocoding a show: full venue address first, then
+// city + country, then country alone. Nominatim can't parse many venue strings
+// (~30% of FIFe venues) — a city-level match beats silently missing from the map.
+// Duplicate queries are dropped (venue is often exactly "city, country").
+export function buildGeocodeCandidates(show: {
+  venue: string | null;
+  city: string | null;
+  country: string | null;
+}): GeocodeCandidate[] {
+  const candidates: GeocodeCandidate[] = [];
+  const seen = new Set<string>();
+  const push = (query: string | null, precision: GeoPrecision) => {
+    const q = query?.trim();
+    if (!q || seen.has(q.toLowerCase())) return;
+    seen.add(q.toLowerCase());
+    candidates.push({ query: q, precision });
+  };
+  push(show.venue, "venue");
+  if (show.city) {
+    push([show.city, show.country].filter(Boolean).join(", "), "city");
+  }
+  push(show.country, "country");
+  return candidates;
 }
 
 const NOMINATIM = "https://nominatim.openstreetmap.org/search";

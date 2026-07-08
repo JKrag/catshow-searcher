@@ -9,7 +9,7 @@ import {
   setFifeDetail,
   setTicaDetail,
 } from "../shows-repo";
-import { geocode } from "../geocode";
+import { geocode, buildGeocodeCandidates } from "../geocode";
 import { fetchFife, fetchFifeDetail } from "./fife";
 import { fetchTica, fetchTicaDetail } from "./tica";
 import type { NormalisedShow, Org, ScrapeRun } from "../types";
@@ -44,16 +44,19 @@ async function runOne(
     );
     let geocoded = 0;
     for (const s of missing) {
-      const q = s.venue ?? [s.city, s.country].filter(Boolean).join(", ");
-      if (!q) continue;
+      // Fallback chain: venue → city+country → country. A city-level match
+      // beats silently missing from the map; precision is stored on the show.
       try {
-        const g = await geocode(q, store.geocode_cache);
-        if (g) {
-          setShowGeocode(store, s.id, g.lat, g.lng);
-          geocoded++;
+        for (const { query, precision } of buildGeocodeCandidates(s)) {
+          const g = await geocode(query, store.geocode_cache);
+          if (g) {
+            setShowGeocode(store, s.id, g.lat, g.lng, precision);
+            geocoded++;
+            break;
+          }
         }
       } catch (e) {
-        console.warn(`geocode failed for ${q}`, e);
+        console.warn(`geocode failed for show ${s.source}/${s.source_id}`, e);
       }
     }
     const run: ScrapeRun = {

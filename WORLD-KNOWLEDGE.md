@@ -93,7 +93,10 @@ Useful fields extractable by HTML/regex:
 - Free tier: **1 request per second** hard limit; exceeding gets 429
 - Requires a descriptive `User-Agent` with contact info
 - Results cached in `store.geocode_cache` (keyed by query string) to avoid repeat lookups
-- Query strategy: try `venue` string first, fall back to `city + country`
+- Query strategy: fallback chain `venue` → `city, country` → `country`
+  (`buildGeocodeCandidates`); the matched level is stored as `geo_precision`
+- ~30% of FIFe venue strings are unparseable by Nominatim (hall names, postal
+  quirks) — the city-level fallback recovers nearly all of them
 
 ---
 
