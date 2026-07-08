@@ -104,6 +104,14 @@ export function migrateStore(store: CatzStore): boolean {
     }
     // Org-specific fields added in #6 — backfill missing keys from old blobs
     const raw = show as unknown as Record<string, unknown>;
+    // geo_precision added with the geocode fallback chain. Shows geocoded before
+    // then used a single query: venue when present, else "city, country" — so the
+    // stored precision can be inferred exactly.
+    if (raw["geo_precision"] === undefined) {
+      raw["geo_precision"] =
+        show.lat == null ? null : show.venue ? "venue" : "city";
+      changed = true;
+    }
     if (show.source === "FIFe") {
       if (raw["show_type"] === undefined) { raw["show_type"] = null; changed = true; }
       if (raw["website_url"] === undefined) { raw["website_url"] = null; changed = true; }

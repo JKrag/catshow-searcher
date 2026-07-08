@@ -92,6 +92,8 @@ export function ShowMap({ shows, home, maxDistanceKm }: Props) {
     let hasBounds = false;
 
     for (const s of geo) {
+      const approximate = s.geo_precision === "city" || s.geo_precision === "country";
+
       const wrap = document.createElement("div");
       wrap.style.display = "flex";
       wrap.style.alignItems = "center";
@@ -102,10 +104,18 @@ export function ShowMap({ shows, home, maxDistanceKm }: Props) {
       dot.style.width = "14px";
       dot.style.height = "14px";
       dot.style.borderRadius = "50%";
-      dot.style.background = orgMarkerColor(s.source);
-      dot.style.border = "2px solid white";
-      dot.style.boxShadow = "0 0 0 1px rgba(0,0,0,0.25)";
       dot.style.flex = "0 0 auto";
+      if (approximate) {
+        // Hollow marker: location is only city/country-level accurate
+        dot.style.background = "white";
+        dot.style.border = `3px solid ${orgMarkerColor(s.source)}`;
+        dot.style.boxShadow = "0 0 0 1px rgba(0,0,0,0.2)";
+        dot.style.opacity = "0.9";
+      } else {
+        dot.style.background = orgMarkerColor(s.source);
+        dot.style.border = "2px solid white";
+        dot.style.boxShadow = "0 0 0 1px rgba(0,0,0,0.25)";
+      }
       wrap.appendChild(dot);
 
       if (home && s.distance_km != null) {
@@ -145,6 +155,13 @@ export function ShowMap({ shows, home, maxDistanceKm }: Props) {
           </div>
           <div>${escapeHtml(s.start_date)} → ${escapeHtml(s.end_date)}</div>
           <div style="opacity:0.65">${escapeHtml([s.city, s.country].filter(Boolean).join(", "))}</div>
+          ${
+            approximate
+              ? `<div style="margin-top:2px;color:#b45309;font-size:11px">📍 Approximate — placed at ${
+                  s.geo_precision === "city" ? "city" : "country"
+                } level (venue address not found)</div>`
+              : ""
+          }
           ${distLine}
           ${s.url ? `<div style="margin-top:4px"><a href="${s.url}" target="_blank" rel="noopener" style="color:#7c3aed">Details ↗</a></div>` : ""}
         </div>`,
@@ -240,8 +257,21 @@ export function ShowMap({ shows, home, maxDistanceKm }: Props) {
     }
   }, [home, maxDistanceKm]);
 
+  const missingCount = shows.length - geo.length;
+
   return (
     <div className="space-y-2">
+      {missingCount > 0 && (
+        <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 ring-1 ring-amber-300/60 dark:ring-amber-700/40 px-3 py-2 text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2">
+          <span aria-hidden>⚠️</span>
+          <span>
+            <span className="font-semibold tabular-nums">{missingCount}</span>{" "}
+            {missingCount === 1 ? "show has" : "shows have"} no known location
+            and {missingCount === 1 ? "is" : "are"} not on the map — check the
+            list view for those.
+          </span>
+        </div>
+      )}
       <div
         ref={containerRef}
         className="w-full h-[600px] rounded-2xl ring-1 ring-border shadow-sm overflow-hidden"
@@ -271,6 +301,10 @@ export function ShowMap({ shows, home, maxDistanceKm }: Props) {
           <span className="flex items-center gap-1.5">
             <span className="inline-block w-2.5 h-2.5 rounded-full bg-[var(--tica)] ring-2 ring-white" />
             TICA
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-white border-2 border-zinc-500 dark:border-zinc-300" />
+            approximate
           </span>
           {home && (
             <span className="flex items-center gap-1.5">

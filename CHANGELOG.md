@@ -4,6 +4,37 @@ Brief record of significant changes. Newest first. Each entry covers a PR or log
 
 ---
 
+## Geocode fallback chain + map honesty
+
+**Problem:** ~30% of shows (257 at the time) failed geocoding — Nominatim can't
+parse many venue strings — and simply never appeared on the map, silently.
+
+- `buildGeocodeCandidates` (src/lib/geocode.ts): ordered fallback
+  `venue` → `city, country` → `country`; first hit wins. Live-verified: all
+  sampled failed venues resolve at city level.
+- New `geo_precision` field on `Show` (`"venue" | "city" | "country" | null`),
+  set at geocode time; store migration back-infers it for already-geocoded
+  shows from the query they were geocoded with.
+- Map: approximate locations (city/country level) render as hollow markers with
+  a legend entry and an "Approximate — placed at city level" note in the popup.
+- Map: amber banner above the map when N shows have no location at all,
+  pointing to the list view. (Previously only a subtle footnote below the map.)
+- 10 new tests: candidate chain (6) + migration backfill (4).
+
+Existing failed shows recover on the next scrape run: their venue queries are
+negative-cached, so the run falls straight through to the city fallback.
+
+---
+
+## Show list: compact full-width judge chips (PR #33)
+
+Judges previously wrapped inside the narrow Title/Club column, making
+multi-judge TICA shows very tall. They now render as non-wrapping chips
+(name + ring-code badge parsed from `"Name(AB)"`) in a full-width sub-row;
+row padding tightened. 5 new component tests via `renderToStaticMarkup`.
+
+---
+
 ## Phase 6.1 + 6.2 — Scraping moves to GitHub Actions; admin becomes a dashboard
 
 **Why:** production had not successfully scraped since 2026-05-08 — the full

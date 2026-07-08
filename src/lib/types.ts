@@ -1,5 +1,10 @@
 export type Org = "FIFe" | "TICA";
 
+// How precisely a show's lat/lng was resolved: from its full venue address,
+// or via fallback to city or country level (see buildGeocodeCandidates).
+// null = not geocoded.
+export type GeoPrecision = "venue" | "city" | "country";
+
 interface BaseShow {
   id: number;
   source: Org;
@@ -13,6 +18,7 @@ interface BaseShow {
   end_date: string;
   lat: number | null;
   lng: number | null;
+  geo_precision: GeoPrecision | null;
   url: string | null;
   scraped_at: string;
 }
