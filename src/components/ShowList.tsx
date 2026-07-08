@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import type { Show, ShowWithDistance } from "@/lib/types";
 import { OrgBadge } from "./OrgBadge";
 
@@ -13,6 +14,13 @@ interface Props {
 function formatDates(s: Show): string {
   if (s.start_date === s.end_date) return s.start_date;
   return `${s.start_date} → ${s.end_date}`;
+}
+
+// Judges are stored as "Yukimasa Hattori(AB)" — split off the ring code so it
+// can be rendered as a small badge instead of wrapping mid-name.
+function parseJudge(judge: string): { name: string; ring: string | null } {
+  const m = judge.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+  return m ? { name: m[1], ring: m[2] } : { name: judge, ring: null };
 }
 
 // Returns true if the venue string contains meaningful info beyond city + country.
@@ -63,19 +71,29 @@ export function ShowList({ shows, homeSet, variant = "full", total }: Props) {
               <th className="py-2.5 px-4 w-12"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border/60">
-            {shows.map((s) => (
+          <tbody>
+            {shows.map((s) => {
+              const judges =
+                variant === "full" && s.source === "TICA" && s.judges && s.judges.length > 0
+                  ? s.judges
+                  : null;
+              return (
+              <Fragment key={`${s.source}-${s.source_id}`}>
               <tr
-                key={`${s.source}-${s.source_id}`}
-                className="hover:bg-[var(--muted-soft)]/50 transition-colors"
+                className={`border-t border-border/60 first:border-t-0 transition-colors hover:bg-[var(--muted-soft)]/50 ${
+                  // Keep the judges sub-row highlighted together with its main row
+                  judges
+                    ? "[&:hover+tr]:bg-[var(--muted-soft)]/50 [&:has(+tr:hover)]:bg-[var(--muted-soft)]/50"
+                    : ""
+                }`}
               >
-                <td className="py-3 px-4">
+                <td className={`${judges ? "pb-1 pt-2.5" : "py-2.5"} px-4`}>
                   <OrgBadge org={s.source} />
                 </td>
-                <td className="py-3 px-3 whitespace-nowrap font-mono text-[12.5px] text-foreground/80">
+                <td className={`${judges ? "pb-1 pt-2.5" : "py-2.5"} px-3 whitespace-nowrap font-mono text-[12.5px] text-foreground/80`}>
                   {formatDates(s)}
                 </td>
-                <td className="py-3 px-3">
+                <td className={`${judges ? "pb-1 pt-2.5" : "py-2.5"} px-3`}>
                   <div className="font-medium text-foreground">
                     {s.title}
                   </div>
@@ -88,13 +106,8 @@ export function ShowList({ shows, homeSet, variant = "full", total }: Props) {
                   {variant === "full" && s.source === "TICA" && s.show_format && (
                     <div className="text-xs text-muted-foreground mt-0.5 italic">{s.show_format}</div>
                   )}
-                  {variant === "full" && s.source === "TICA" && s.judges && s.judges.length > 0 && (
-                    <div className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                      {s.judges.join(" · ")}
-                    </div>
-                  )}
                 </td>
-                <td className="py-3 px-3">
+                <td className={`${judges ? "pb-1 pt-2.5" : "py-2.5"} px-3`}>
                   <div className="text-foreground/90">
                     {[s.city, s.country].filter(Boolean).join(", ")}
                   </div>
@@ -105,7 +118,7 @@ export function ShowList({ shows, homeSet, variant = "full", total }: Props) {
                   )}
                 </td>
                 {homeSet && (
-                  <td className="py-3 px-3 whitespace-nowrap">
+                  <td className={`${judges ? "pb-1 pt-2.5" : "py-2.5"} px-3 whitespace-nowrap`}>
                     {s.distance_km != null ? (
                       <div className="inline-flex flex-col items-start gap-0.5 px-2 py-1 rounded-lg bg-[var(--accent)]/15 ring-1 ring-[var(--accent)]/30 distance-pulse">
                         <div className="font-semibold tabular-nums text-foreground text-xs">
@@ -122,7 +135,7 @@ export function ShowList({ shows, homeSet, variant = "full", total }: Props) {
                     )}
                   </td>
                 )}
-                <td className="py-3 px-4">
+                <td className={`${judges ? "pb-1 pt-2.5" : "py-2.5"} px-4`}>
                   <div className="flex items-center gap-1">
                     {s.url && (
                       <a
@@ -160,7 +173,36 @@ export function ShowList({ shows, homeSet, variant = "full", total }: Props) {
                   </div>
                 </td>
               </tr>
-            ))}
+              {judges && (
+                <tr className="transition-colors hover:bg-[var(--muted-soft)]/50">
+                  <td colSpan={homeSet ? 6 : 5} className="pb-2.5 px-4 pt-0">
+                    <div className="flex flex-wrap items-baseline gap-1">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">
+                        Judges
+                      </span>
+                      {judges.map((j, i) => {
+                        const { name, ring } = parseJudge(j);
+                        return (
+                          <span
+                            key={i}
+                            className="inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-[var(--muted-soft)]/70 ring-1 ring-border/60 px-1.5 py-0.5 text-[11px] leading-tight text-foreground/80"
+                          >
+                            {name}
+                            {ring && (
+                              <span className="text-[9px] font-semibold uppercase text-[var(--tica)]">
+                                {ring}
+                              </span>
+                            )}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>
