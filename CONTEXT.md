@@ -53,6 +53,25 @@ The user's own address, used to compute travel distance to Shows. Lives only in
 the user's browser.
 _Avoid_: location, origin
 
+### Organizer planning
+
+**Blast radius**:
+The separation zone around a show inside which another show on the colliding
+date unit is restricted: FIFe = 400 km by road on the same day (hard rule,
+Show Rules §1.4); TICA = 500 miles / 805 km or same region on the same weekend
+(softer, Regional-Director-gated, TICA 22.1.2).
+_Avoid_: exclusion zone, conflict circle
+
+**Show weekend**:
+The date unit shows compete on. Most shows land on Sat/Sun; TICA's separation
+rule counts collisions per weekend, FIFe's per exact day.
+
+**Candidate**:
+The show being planned: a location pin plus a from–to date window, evaluated
+against all existing Shows. The organizer's federation (FIFe / TICA / other)
+determines which Blast radius applies — "other" means none.
+_Avoid_: draft show, proposal
+
 ## Example dialogue
 
 > **Dev:** A user says the judge filter shows nothing.

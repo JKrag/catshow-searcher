@@ -122,7 +122,20 @@ Cornerstone rule for the future organizer view's conflict checking:
   ring suffix, e.g. `"Yukimasa Hattori(AB)"`. Far-future shows often have no judges
   published yet (~40% of upcoming shows at any time)
 
----
+### TICA show separation
+
+(Found in TICA Show Rules: Article Two, 22.1.2, from 2019, so might be out of date.
+
+> 22.1.2 Show Dates. When a club desires a show date from the Regional Director, they may request that date in writing. After 30 days, there being no response from the Regional Director, the club may proceed with the show date,scheduling it through the ExecutiveOffice byproviding the Executive Office with a copy of the written request.
+> 22.1.2.1 The Regional Director may onlydenya club a specific show date if there is a previously scheduled TICA show within 500 miles (805 kilometers) or in the same region on the requested weekend.
+> 22.1.2.2 If there are multiple show requests for the same show weekend, shows may be held within 500 miles (805 kilometers) of each other only with both A and B below:
+> A. Written permission from the show managers, and
+> B. Written permission of the regional director or regional directors if the show requests are from multiple regions. The first club that requests a show date is authorized to have the show.
+> 22.1.2.3 The provisions and restrictions of 22.1.2.1 and 22.1.2.2 shall not apply when one or both of the scheduled shows for the same date is part of a Pet Expo in which the Pet Expo determines the date of the expo, and when the show is limited to a maximum of 125 entries.
+
+
+In other words, TICA shows on the same weekend must be at least 805 km apart unless the clubs and regional directors agree in writing. The first club to request a date has priority. Pet Expo shows are exempt from this rule. So not quite as hard a requirement as FIFe's 400 km same-day rule, but still a separation rule to be aware of when organising a show.
+Also, the show managers guide that I found explicitly mentions that organisers should also be aware of nearby shows in other federations.
 
 ## Nominatim — geocoding
 
