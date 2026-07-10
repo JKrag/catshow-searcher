@@ -4,6 +4,41 @@ Brief record of significant changes. Newest first. Each entry covers a PR or log
 
 ---
 
+## Organizer view: conflict engine, scatter, map, page (#38)
+
+New `/organizer` route, replacing the "coming soon" stub: decision support for
+a club planning a show — drop a pin, pick a date window and organising
+federation, see what you're up against.
+
+- **Conflict engine** (`src/lib/organizer.ts`): FIFe's 400 km same-day rule
+  (haversine pre-filter, OSRM road-verified) and TICA's 805 km same-weekend
+  rule, bucketed by weekend, 1500 km display cap for distant shows. Cross-org
+  shows (and `org: "other"` candidates) are always soft "competition", never
+  rule conflicts — this was missing from the first pass and got caught and
+  fixed before merge, with test coverage added.
+- **Scatter** (`src/components/OrganizerScatter.tsx`): hand-rolled SVG
+  distance-over-date view, org-coloured/hollow dots, rule lines only for the
+  candidate's own federation, keyboard-accessible weekend columns.
+- **Map** (`src/components/OrganizerMap.tsx`, `src/lib/map-geo.ts` — extracted
+  `circlePolygon` out of `ShowMap.tsx`): draggable candidate pin; blast-radius
+  circles are selection-driven **[experiment]** — one circle around the pin by
+  default, inverting to circles around the selected weekend's own-org shows
+  (no-go zones) once a weekend is picked. Also fixed: a React Strict Mode
+  (dev-only) bug where the candidate marker could be orphaned on a torn-down
+  map instance and never reappear after Next's dev-mode double-effect
+  remount — invisible in `npm run dev`, fine in production builds.
+- **Page** (`src/app/organizer/page.tsx`): candidate state lives in URL params
+  (shareable with a club committee) with a localStorage fallback; OSRM
+  verification is budget-capped to FIFe-potential conflicts only, never
+  batch-verifies the whole show list; weekend detail panel with status pills
+  and road/straight-line distance; footnote on known scope gaps.
+- Deliberately out of scope: TICA's "same region" clause (no region data),
+  FIFe postal-code protection parsing, applying/booking workflows,
+  road-accurate isodistance polygons. Follow-up issues filed.
+- 48 new tests (142 total): conflict engine (39) + scatter markup (9).
+
+---
+
 ## Re-geocode shows when their location changes
 
 Geocoding was triggered only by `lat == null`, so a show that moved after first
