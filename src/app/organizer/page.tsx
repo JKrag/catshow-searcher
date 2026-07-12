@@ -24,6 +24,22 @@ function isCandidateOrg(v: string | null): v is CandidateOrg {
   return v === "FIFe" || v === "TICA" || v === "other";
 }
 
+// A finite lat/lng within valid geographic range.
+function isValidLat(n: number): boolean {
+  return Number.isFinite(n) && n >= -90 && n <= 90;
+}
+function isValidLng(n: number): boolean {
+  return Number.isFinite(n) && n >= -180 && n <= 180;
+}
+
+// A real `YYYY-MM-DD` calendar date (rejects "", non-ISO strings, and
+// impossible dates like 2027-13-40 that would make weekendKey/addDays throw).
+function isIsoDate(s: unknown): s is string {
+  if (typeof s !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(s + "T00:00:00Z");
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+}
+
 // Default candidate window: next calendar year's Sep 1 – Oct 15.
 function defaultCandidate(): Candidate {
   const now = new Date();
@@ -45,10 +61,11 @@ function readCandidateFromUrl(): Candidate | null {
   const from = params.get("from");
   const to = params.get("to");
   const org = params.get("org");
-  if (!lat || !lng || !from || !to || !isCandidateOrg(org)) return null;
+  if (!lat || !lng || !isCandidateOrg(org)) return null;
   const latNum = Number(lat);
   const lngNum = Number(lng);
-  if (Number.isNaN(latNum) || Number.isNaN(lngNum)) return null;
+  if (!isValidLat(latNum) || !isValidLng(lngNum)) return null;
+  if (!isIsoDate(from) || !isIsoDate(to)) return null;
   return { lat: latNum, lng: lngNum, from, to, org };
 }
 
@@ -59,10 +76,10 @@ function readCandidateFromStorage(): Candidate | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (
-      typeof parsed?.lat === "number" &&
-      typeof parsed?.lng === "number" &&
-      typeof parsed?.from === "string" &&
-      typeof parsed?.to === "string" &&
+      isValidLat(parsed?.lat) &&
+      isValidLng(parsed?.lng) &&
+      isIsoDate(parsed?.from) &&
+      isIsoDate(parsed?.to) &&
       isCandidateOrg(parsed?.org)
     ) {
       return parsed as Candidate;
@@ -228,7 +245,9 @@ export default function OrganizerPage() {
             <input
               type="date"
               value={candidate.from}
-              onChange={(e) => setCandidate({ ...candidate, from: e.target.value })}
+              onChange={(e) => {
+                if (isIsoDate(e.target.value)) setCandidate({ ...candidate, from: e.target.value });
+              }}
               className="rounded-lg border border-border px-2 py-1.5 text-sm bg-[var(--background)]"
             />
           </div>
@@ -237,7 +256,9 @@ export default function OrganizerPage() {
             <input
               type="date"
               value={candidate.to}
-              onChange={(e) => setCandidate({ ...candidate, to: e.target.value })}
+              onChange={(e) => {
+                if (isIsoDate(e.target.value)) setCandidate({ ...candidate, to: e.target.value });
+              }}
               className="rounded-lg border border-border px-2 py-1.5 text-sm bg-[var(--background)]"
             />
           </div>
