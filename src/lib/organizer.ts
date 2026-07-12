@@ -27,20 +27,32 @@ export type ShowStatus = ConflictStatus | "clear" | "competition";
 
 export type CompetitionStatus = "competition"; // everything else visible (soft)
 
-// Saturday (ISO date) of the show's weekend. Fri/Sat/Sun map to that
-// Saturday (Fri → same Sat, Sun → previous Sat); Mon–Thu map to the next
-// Saturday.
+// Saturday (ISO date) identifying the "show weekend" a given day belongs to.
+//
+// Each Saturday owns a 7-day span running Wednesday → the following Tuesday:
+//   Wed/Thu/Fri  → the UPCOMING Saturday   (3-day shows starting Fri, and the
+//                  rare Wed/Thu start, belong to the weekend they run into)
+//   Sat/Sun      → that same weekend's Saturday
+//   Mon/Tue      → the PREVIOUS Saturday    (Sun/Mon and rare Mon/Tue tails —
+//                  e.g. Easter Monday or a New-Year holiday — belong to the
+//                  weekend they run out of)
+// Wednesday has never been observed as a show day; it is grouped with Thu/Fri
+// (upcoming weekend) purely to keep the partition unambiguous.
+// See CONTEXT.md → "Show weekend" and docs/adr/0003 for the rationale.
 export function weekendKey(date: string): string {
   const d = new Date(date + "T00:00:00Z");
   const day = d.getUTCDay(); // Sun=0, Mon=1, …, Fri=5, Sat=6
-  if (day === 6) return date; // already Saturday
-  if (day === 0) { // Sunday → previous day = Saturday
-    d.setUTCDate(d.getUTCDate() - 1);
-    return d.toISOString().slice(0, 10);
-  }
-  // Mon(1)…Fri(5): go forward to next Saturday.
-  // Offset = (6 - day): Mon=5, Tue=4, Wed=3, Thu=2, Fri=1
-  d.setUTCDate(d.getUTCDate() + (6 - day));
+  // Offset in days from this date to its owning Saturday.
+  const offsetByDay: Record<number, number> = {
+    0: -1, // Sun → previous day = this weekend's Saturday
+    1: -2, // Mon → previous weekend's Saturday
+    2: -3, // Tue → previous weekend's Saturday
+    3: 3, //  Wed → upcoming Saturday
+    4: 2, //  Thu → upcoming Saturday
+    5: 1, //  Fri → upcoming Saturday
+    6: 0, //  Sat → itself
+  };
+  d.setUTCDate(d.getUTCDate() + offsetByDay[day]);
   return d.toISOString().slice(0, 10);
 }
 
@@ -80,16 +92,15 @@ export interface WeekendAssessment {
 
 // --- Helpers ---
 
-/** Find which candidate weekend contains `day`. */
+/**
+ * Find which candidate weekend `day` buckets into. Uses the same `weekendKey`
+ * partition as everything else (Wed/Thu/Fri → upcoming Saturday, Sat/Sun → this
+ * Saturday, Mon/Tue → previous Saturday), so Friday 3-day starts and Mon/Tue
+ * holiday tails land in the correct column rather than falling through.
+ */
 function findCandidateWeekendForDay(day: string, cWeekends: string[]): string | null {
-  for (const wk of cWeekends) {
-    // candidate weekend covers Sat..Sun (Sat + 1 day)
-    const sun = new Date(wk + "T00:00:00Z");
-    sun.setUTCDate(sun.getUTCDate() + 1);
-    const sunStr = sun.toISOString().slice(0, 10);
-    if (day >= wk && day <= sunStr) return wk;
-  }
-  return null;
+  const wk = weekendKey(day);
+  return cWeekends.includes(wk) ? wk : null;
 }
 
 /** Check if the candidate window overlaps this FIFe show's date range. */
@@ -198,13 +209,12 @@ function classifyShow(
   cWeekends: string[],
   roadKmByShowId: Record<string, number | undefined>
 ): AssessedShow | null {
-  // Always check against the candidate window.
-  const isOverlapping = () => {
-    if (show.start_date > candidate.to) return false; // starts after window → not overlapping
-    if (show.end_date < candidate.from) return false; // ends before window → not overlapping
-    if (show.start_date < candidate.from) return false; // starts before window
-    return true; // ends on/after window start, starts on/after window start
-  };
+  // Standard closed-interval overlap: the ranges intersect unless one ends
+  // before the other begins. A show that STARTS before the window but runs into
+  // it (e.g. a Friday-start 3-day show whose window opens on the Saturday) still
+  // overlaps and must be kept — the fine-grained classifiers gate the rest.
+  const isOverlapping = () =>
+    show.start_date <= candidate.to && show.end_date >= candidate.from;
 
   if (!isOverlapping()) return null; // show's date range doesn't intersect candidate window
 
@@ -241,9 +251,12 @@ function classifyShow(
 // --- Main API ---
 
 /**
- * Assess all candidate days against the full show set. Returns one assessment per
- * weekend (Saturday) in the candidate window, each containing the shows that fall
- * under that weekend, a worst-case WeekendStatus and cap/noLocation counters.
+ * Assess all candidate days against the full show set. Returns one assessment
+ * per weekend (Saturday) in the candidate window — including weekends with no
+ * shows, which come back with an empty `shows[]` and a "clear" status so the
+ * organizer can see genuinely-free dates. Each assessment carries the shows
+ * bucketed under that weekend, a worst-case WeekendStatus and cap/noLocation
+ * counters.
  *
  * Callers should precompute `roadKmByShowId` from OSRM responses (only shows that
  * could be FIFe-hard conflicts need OSRM — haversine < 400 km shortcut avoids
@@ -272,8 +285,7 @@ export function assessCandidate(
 
   const out: WeekendAssessment[] = [];
   for (const wk of weekends) {
-    const bucket = byWeekend.get(wk);
-    if (!bucket || bucket.length === 0) continue;
+    const bucket = byWeekend.get(wk) ?? [];
 
     // Compute distance from pin for sorting (caller may want to use it in UI)
     const withDistance = bucket.map((a) => {

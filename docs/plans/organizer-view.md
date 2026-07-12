@@ -85,8 +85,9 @@ export interface Candidate {
   from: string; to: string;      // YYYY-MM-DD, inclusive
   org: CandidateOrg;
 }
-// Saturday (ISO date) of the show's weekend. Sat/Sun/Fri-start shows map to
-// that weekend's Saturday; Mon–Thu starts map to the *following* Saturday.
+// Saturday (ISO date) of the show's weekend. Wed/Thu/Fri map to the upcoming
+// Saturday (3-day Friday starts); Sat/Sun to that weekend; Mon/Tue back to the
+// previous Saturday (Sun/Mon holiday tails). See docs/adr/0003-weekend-bucketing.
 export function weekendKey(date: string): string;
 // All weekend keys covered by [from, to].
 export function weekendsInWindow(from: string, to: string): string[];

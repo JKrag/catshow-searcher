@@ -39,10 +39,12 @@ export function OrganizerScatter({
   selectedWeekend,
   onSelectWeekend,
 }: OrganizerScatterProps) {
+  // assessCandidate returns one assessment per weekend in the window (empty
+  // weekends included), so this only fires for an empty/invalid date window.
   if (assessments.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
-        No shows found in the candidate window.
+        Pick a date window to see conflicts.
       </div>
     );
   }

@@ -4,6 +4,33 @@ Brief record of significant changes. Newest first. Each entry covers a PR or log
 
 ---
 
+## Organizer view: weekend-bucketing rule + review fixes (#39)
+
+Follow-up to #38, addressing Copilot review comments — and pinning down a
+weekend-bucketing corner case that had never been decided.
+
+- **Weekend interpretation (new decision, `docs/adr/0003`)**: shows that don't
+  start on Sat/Sun now bucket by a Wed→following-Tue span per Saturday —
+  **Wed/Thu/Fri → the upcoming weekend** (3-day shows starting Friday),
+  **Mon/Tue → the previous weekend** (Sun/Mon holiday tails like Easter Monday
+  or New Year). Only behavioural change vs #38: Mon/Tue map backward instead of
+  forward. Recorded in `CONTEXT.md`, the `weekendKey` doc comment, and the plan.
+- **`weekendKey` / `findCandidateWeekendForDay`**: `weekendKey` rewritten to the
+  offset table above; the bucketing helper now delegates to it instead of a
+  Sat–Sun containment check, so Friday starts and Monday tails land in the right
+  column rather than falling back to the first weekend.
+- **Overlap fix** (`isOverlapping`): now standard closed-interval overlap, so a
+  multi-day show that starts before the candidate window but runs into it is no
+  longer dropped.
+- **Free weekends**: `assessCandidate` now returns one assessment per weekend in
+  the window — including empty ones (clear, no shows) — so the organizer can see
+  genuinely-open dates as columns, not just the busy weekends.
+- **Tests**: corrected mislabelled weekday comments (verified every fixture date
+  against its real weekday), fixed fixtures that silently became multi-week
+  spans (`defaultFife`/`defaultTica` now single-day the show when only
+  `start_date` is overridden), and added backward-crossing and free-weekend
+  coverage.
+
 ## Organizer view: conflict engine, scatter, map, page (#38)
 
 New `/organizer` route, replacing the "coming soon" stub: decision support for

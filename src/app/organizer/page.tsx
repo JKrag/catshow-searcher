@@ -24,10 +24,6 @@ function isCandidateOrg(v: string | null): v is CandidateOrg {
   return v === "FIFe" || v === "TICA" || v === "other";
 }
 
-function ymd(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
 // Default candidate window: next calendar year's Sep 1 – Oct 15.
 function defaultCandidate(): Candidate {
   const now = new Date();

@@ -84,7 +84,7 @@ const candidate = (overrides: Partial<Candidate> = {}): Candidate => ({
 });
 
 describe("OrganizerScatter", () => {
-  it("renders empty state when there are no assessments", () => {
+  it("renders empty state when there are no assessments (empty/invalid window)", () => {
     const html = renderToStaticMarkup(
       <OrganizerScatter
         assessments={[]}
@@ -93,7 +93,7 @@ describe("OrganizerScatter", () => {
         onSelectWeekend={() => {}}
       />,
     );
-    expect(html).toContain("No shows found in the candidate window");
+    expect(html).toContain("Pick a date window to see conflicts");
   });
 
   it("renders one dot per show and a column per weekend", () => {
