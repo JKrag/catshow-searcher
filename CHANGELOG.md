@@ -4,6 +4,68 @@ Brief record of significant changes. Newest first. Each entry covers a PR or log
 
 ---
 
+## Organizer view: weekend-bucketing rule + review fixes (#39)
+
+Follow-up to #38, addressing Copilot review comments — and pinning down a
+weekend-bucketing corner case that had never been decided.
+
+- **Weekend interpretation (new decision, `docs/adr/0003`)**: shows that don't
+  start on Sat/Sun now bucket by a Wed→following-Tue span per Saturday —
+  **Wed/Thu/Fri → the upcoming weekend** (3-day shows starting Friday),
+  **Mon/Tue → the previous weekend** (Sun/Mon holiday tails like Easter Monday
+  or New Year). Only behavioural change vs #38: Mon/Tue map backward instead of
+  forward. Recorded in `CONTEXT.md`, the `weekendKey` doc comment, and the plan.
+- **`weekendKey` / `findCandidateWeekendForDay`**: `weekendKey` rewritten to the
+  offset table above; the bucketing helper now delegates to it instead of a
+  Sat–Sun containment check, so Friday starts and Monday tails land in the right
+  column rather than falling back to the first weekend.
+- **Overlap fix** (`isOverlapping`): now standard closed-interval overlap, so a
+  multi-day show that starts before the candidate window but runs into it is no
+  longer dropped.
+- **Free weekends**: `assessCandidate` now returns one assessment per weekend in
+  the window — including empty ones (clear, no shows) — so the organizer can see
+  genuinely-open dates as columns, not just the busy weekends.
+- **Tests**: corrected mislabelled weekday comments (verified every fixture date
+  against its real weekday), fixed fixtures that silently became multi-week
+  spans (`defaultFife`/`defaultTica` now single-day the show when only
+  `start_date` is overridden), and added backward-crossing and free-weekend
+  coverage.
+
+## Organizer view: conflict engine, scatter, map, page (#38)
+
+New `/organizer` route, replacing the "coming soon" stub: decision support for
+a club planning a show — drop a pin, pick a date window and organising
+federation, see what you're up against.
+
+- **Conflict engine** (`src/lib/organizer.ts`): FIFe's 400 km same-day rule
+  (haversine pre-filter, OSRM road-verified) and TICA's 805 km same-weekend
+  rule, bucketed by weekend, 1500 km display cap for distant shows. Cross-org
+  shows (and `org: "other"` candidates) are always soft "competition", never
+  rule conflicts — this was missing from the first pass and got caught and
+  fixed before merge, with test coverage added.
+- **Scatter** (`src/components/OrganizerScatter.tsx`): hand-rolled SVG
+  distance-over-date view, org-coloured/hollow dots, rule lines only for the
+  candidate's own federation, keyboard-accessible weekend columns.
+- **Map** (`src/components/OrganizerMap.tsx`, `src/lib/map-geo.ts` — extracted
+  `circlePolygon` out of `ShowMap.tsx`): draggable candidate pin; blast-radius
+  circles are selection-driven **[experiment]** — one circle around the pin by
+  default, inverting to circles around the selected weekend's own-org shows
+  (no-go zones) once a weekend is picked. Also fixed: a React Strict Mode
+  (dev-only) bug where the candidate marker could be orphaned on a torn-down
+  map instance and never reappear after Next's dev-mode double-effect
+  remount — invisible in `npm run dev`, fine in production builds.
+- **Page** (`src/app/organizer/page.tsx`): candidate state lives in URL params
+  (shareable with a club committee) with a localStorage fallback; OSRM
+  verification is budget-capped to FIFe-potential conflicts only, never
+  batch-verifies the whole show list; weekend detail panel with status pills
+  and road/straight-line distance; footnote on known scope gaps.
+- Deliberately out of scope: TICA's "same region" clause (no region data),
+  FIFe postal-code protection parsing, applying/booking workflows,
+  road-accurate isodistance polygons. Follow-up issues filed.
+- 48 new tests (142 total): conflict engine (39) + scatter markup (9).
+
+---
+
 ## Re-geocode shows when their location changes
 
 Geocoding was triggered only by `lat == null`, so a show that moved after first

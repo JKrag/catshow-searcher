@@ -63,8 +63,13 @@ Show Rules §1.4); TICA = 500 miles / 805 km or same region on the same weekend
 _Avoid_: exclusion zone, conflict circle
 
 **Show weekend**:
-The date unit shows compete on. Most shows land on Sat/Sun; TICA's separation
-rule counts collisions per weekend, FIFe's per exact day.
+The date unit shows compete on, keyed by its **Saturday** (ISO date). Most shows
+land on Sat/Sun; TICA's separation rule counts collisions per weekend, FIFe's per
+exact day. Days that fall outside Sat/Sun are bucketed so each Saturday owns a
+Wed→following-Tue span: **Thu/Fri (and Wed) → the upcoming weekend** (catches
+3-day shows starting Friday), **Mon/Tue → the previous weekend** (catches
+Sun/Mon holiday tails, e.g. Easter Monday or New Year). See
+`docs/adr/0003-weekend-bucketing.md` and `weekendKey` in `src/lib/organizer.ts`.
 
 **Candidate**:
 The show being planned: a location pin plus a from–to date window, evaluated

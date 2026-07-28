@@ -75,7 +75,7 @@ Done. Three URL-based persona routes implemented:
 
 - `/` — **Visitor**: map default, minimal sidebar (date + country + distance, 200 km default, 500 km max, "Show all" checkbox), no org/search filters
 - `/exhibitor` — **Exhibitor**: full sidebar with all 5 sections, list default, show_type/format/links all shown
-- `/organizer` — **Organizer**: stub with "Timeline view coming soon" placeholder
+- `/organizer` — **Organizer**: full conflict-assessment view, see #38 below (was a stub through Phase 6)
 
 Shared hooks (`useShows`, `useRoutes`), `PersonaNav` component, and `haversine.ts` utility extracted/created. `FilterSidebar` and `ShowList` both accept a `variant` prop.
 
@@ -148,6 +148,45 @@ appears broken — judges were simply never fetched). See ADR 0001.
 
 ---
 
+## Phase 7 — Organizer view (#38)
+
+Decision support for a club planning a show: pin + date window + organising
+federation → conflict/competition assessment against FIFe's 400 km same-day
+rule and TICA's 805 km same-weekend rule. Design doc:
+`docs/plans/organizer-view.md`.
+
+- ✅ **WP1 — Conflict engine** (`src/lib/organizer.ts`): weekend bucketing,
+  haversine-then-road-verified FIFe hard/potential/clear, TICA
+  permission/approximate, 1500 km display cap. Fixed during implementation:
+  the org-awareness rule ("cross-org shows are always soft competition, never
+  rule conflicts"; `org: "other"` → competition only) was missing from the
+  first pass and has since been added with test coverage.
+- ✅ **WP2 — Scatter** (`src/components/OrganizerScatter.tsx`): hand-rolled SVG
+  distance-over-date view, org-coloured/hollow dots, org-aware rule lines,
+  keyboard-accessible weekend columns.
+- ✅ **WP3 — Map** (`src/components/OrganizerMap.tsx`, `src/lib/map-geo.ts`):
+  draggable candidate pin, selection-driven blast-radius circles **[experiment]**
+  — default is one circle around the pin, selecting a weekend inverts to
+  circles around that weekend's own-org shows (no-go zones). Fixed during
+  implementation: a React Strict Mode (dev-only) bug where the candidate
+  marker could be left attached to a torn-down map instance and never
+  reappear after Next.js's dev-mode double-effect remount.
+- ✅ **WP4 — Page assembly** (`src/app/organizer/page.tsx`): candidate state in
+  URL params + localStorage, OSRM verification budget-capped to
+  FIFe-potential conflicts only (never batch-verifies everything), weekend
+  detail panel, scope-gap footnote.
+- ✅ **WP5 — Integration**: all three persona routes verified (`next build` +
+  manual route check), `npm test` green (142 tests), this changelog/roadmap
+  update. Follow-up issues filed: #40 (FIFe postal-code parsing), #41 (TICA
+  same-region clause), #42 (validate the map radius-inversion UX with real
+  organizers).
+
+**Deliberately out of scope (see design doc):** TICA "same region" clause (no
+region data, #41), FIFe postal-code protection parsing (#40),
+applying/booking workflows, isodistance (road-accurate) polygons.
+
+---
+
 ### #12 — Internationalization
 The domain `katteudstilling.dk` suggests a Danish entry point alongside an international one.
 Add multi-language support once the UI is stable. Doing this last avoids duplicating i18n work
@@ -169,4 +208,5 @@ on components that are still changing.
 | 8 | #11 Redesign epic | ✅ Done | — |
 | 9 | PR #20 TICA judge names | ✅ Done | #11 |
 | 10 | #21 FIFe iCal pagination | ✅ Done | — |
-| 11 | #12 Internationalization | Pending | #11 (UI stable) |
+| 11 | #38 Organizer view | ✅ Done | #11 |
+| 12 | #12 Internationalization | Pending | #11 (UI stable) |
