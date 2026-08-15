@@ -21,7 +21,19 @@ export type InitialSort = {
 type SortColumn = "start_date" | "distance_km" | "title" | "location";
 type SortDirection = "asc" | "desc";
 
+function formatDates(s: Show): string {
+  if (s.start_date === s.end_date) return s.start_date;
+  return `${s.start_date} → ${s.end_date}`;
+}
+
+function formatLocation(s: Show): string {
+  return [s.city, s.country].filter(Boolean).join(", ");
+}
+
 function defaultCompare(column: SortColumn, a: ShowWithDistance, b: ShowWithDistance): number {
+  if (column === "location") {
+    return formatLocation(a).localeCompare(formatLocation(b));
+  }
   const va = a[column];
   const vb = b[column];
   if (va == null && vb == null) return 0;
@@ -31,15 +43,6 @@ function defaultCompare(column: SortColumn, a: ShowWithDistance, b: ShowWithDist
     return va.localeCompare(vb);
   }
   return (va as number) - (vb as number);
-}
-
-function formatDates(s: Show): string {
-  if (s.start_date === s.end_date) return s.start_date;
-  return `${s.start_date} → ${s.end_date}`;
-}
-
-function formatLocation(s: Show): string {
-  return [s.city, s.country].filter(Boolean).join(", ");
 }
 
 function parseJudge(judge: string): { name: string; ring: string | null } {
@@ -57,8 +60,41 @@ function venueAddsInfo(venue: string, city: string | null, country: string | nul
   return false;
 }
 
-function activeHeaderSort(column: SortColumn, sortColumn: SortColumn, sortDirection: SortDirection): boolean {
-  return sortColumn === column && sortDirection !== "asc";
+function SortableHeader({
+  label,
+  column,
+  sortColumn,
+  sortDirection,
+  onToggle,
+  className = "",
+}: {
+  label: string;
+  column: SortColumn;
+  sortColumn: SortColumn;
+  sortDirection: SortDirection;
+  onToggle: (col: SortColumn) => void;
+  className?: string;
+}) {
+  const active = sortColumn === column;
+  return (
+    <th
+      className={`py-0 px-0 ${className}`}
+      aria-sort={active ? (sortDirection === "asc" ? "ascending" : "descending") : undefined}
+    >
+      <button
+        type="button"
+        onClick={() => onToggle(column)}
+        className="w-full h-full py-2.5 px-3 text-left cursor-pointer select-none hover:bg-[var(--muted-soft)]/80 transition-colors ring-1 ring-inset rounded-md"
+      >
+        {label}
+        {active && (
+          <span className="inline-block ml-1 text-[10px] font-bold" aria-hidden>
+            {sortDirection === "asc" ? "▲" : "▼"}
+          </span>
+        )}
+      </button>
+    </th>
+  );
 }
 
 export function ShowList({ shows, homeSet, variant = "full", total, initialSort }: Props) {
@@ -120,75 +156,37 @@ export function ShowList({ shows, homeSet, variant = "full", total, initialSort 
           <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground bg-[var(--muted-soft)]/60 border-b border-border">
             <tr>
               <th className="py-2.5 px-4 w-16">Org</th>
-              <th
-                className="py-2.5 px-3 w-44 cursor-pointer select-none hover:bg-[var(--muted-soft)]/80 transition-colors ring-1 ring-inset rounded-md"
-                onClick={() => toggleColumn("start_date")}
-                aria-sort={
-                  sortColumn === "start_date" ? (sortDirection === "asc" ? "ascending" : "descending") : undefined
-                }
-              >
-                Dates
-                {sortColumn === "start_date" && (
-                  <span
-                    className="inline-block ml-1 text-[10px] font-bold"
-                    aria-hidden
-                  >
-                    {sortDirection === "asc" ? "▲" : "▼"}
-                  </span>
-                )}
-              </th>
-              <th
-                className="py-2.5 px-3 cursor-pointer select-none hover:bg-[var(--muted-soft)]/80 transition-colors ring-1 ring-inset rounded-md"
-                onClick={() => toggleColumn("title")}
-                aria-sort={
-                  sortColumn === "title" ? (sortDirection === "asc" ? "ascending" : "descending") : undefined
-                }
-              >
-                Title / Club
-                {sortColumn === "title" && (
-                  <span
-                    className="inline-block ml-1 text-[10px] font-bold"
-                    aria-hidden
-                  >
-                    {sortDirection === "asc" ? "▲" : "▼"}
-                  </span>
-                )}
-              </th>
-              <th
-                className="py-2.5 px-3 cursor-pointer select-none hover:bg-[var(--muted-soft)]/80 transition-colors ring-1 ring-inset rounded-md"
-                onClick={() => toggleColumn("location")}
-                aria-sort={
-                  sortColumn === "location" ? (sortDirection === "asc" ? "ascending" : "descending") : undefined
-                }
-              >
-                Location
-                {sortColumn === "location" && (
-                  <span
-                    className="inline-block ml-1 text-[10px] font-bold"
-                    aria-hidden
-                  >
-                    {sortDirection === "asc" ? "▲" : "▼"}
-                  </span>
-                )}
-              </th>
+              <SortableHeader
+                label="Dates"
+                column="start_date"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onToggle={toggleColumn}
+                className="w-44"
+              />
+              <SortableHeader
+                label="Title / Club"
+                column="title"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onToggle={toggleColumn}
+              />
+              <SortableHeader
+                label="Location"
+                column="location"
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onToggle={toggleColumn}
+              />
               {homeSet && (
-                <th
-                  className="py-2.5 px-3 w-32 cursor-pointer select-none hover:bg-[var(--muted-soft)]/80 transition-colors ring-1 ring-inset rounded-md"
-                  onClick={() => toggleColumn("distance_km")}
-                  aria-sort={
-                    sortColumn === "distance_km" ? (sortDirection === "asc" ? "ascending" : "descending") : undefined
-                  }
-                >
-                  Distance
-                  {sortColumn === "distance_km" && (
-                    <span
-                      className="inline-block ml-1 text-[10px] font-bold"
-                      aria-hidden
-                    >
-                      {sortDirection === "asc" ? "▲" : "▼"}
-                    </span>
-                  )}
-                </th>
+                <SortableHeader
+                  label="Distance"
+                  column="distance_km"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onToggle={toggleColumn}
+                  className="w-32"
+                />
               )}
               <th className="py-2.5 px-4 w-12"></th>
             </tr>

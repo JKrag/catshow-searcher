@@ -6,10 +6,11 @@ import { ShowList } from "../ShowList";
 import type { ShowWithDistance, TicaShow } from "@/lib/types";
 
 function ticaShow(overrides: Partial<TicaShow> = {}): ShowWithDistance {
+  const id = overrides.id ?? 1;
   return {
-    id: 1,
+    id,
     source: "TICA",
-    source_id: "1234",
+    source_id: String(1000 + id),
     title: "Test Cat Club",
     club: "Test Cat Club",
     country: "Denmark",

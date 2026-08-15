@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Org } from "@/lib/types";
 
 const COUNTRIES_KEY = "catz.countries";
@@ -66,13 +66,29 @@ export function FilterSidebar({ filters, onChange, countries, homeSet, variant =
   const toLocalDateString = (date: Date): string =>
     `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
-  // Load persisted countries from localStorage on mount
+  // Load persisted countries from localStorage on mount, but never override
+  // an explicit non-empty `filters.countries` a parent already passed in.
   useEffect(() => {
-    const persisted = loadPersistedCountries();
-    if (persisted.length > 0) {
-      onChange({ ...filters, countries: persisted });
+    if (filters.countries.length === 0) {
+      const persisted = loadPersistedCountries();
+      if (persisted.length > 0) {
+        onChange({ ...filters, countries: persisted });
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Persist on every change to filters.countries (toggle, Clear, reset, etc.)
+  // — skip the very first render so this doesn't race the load effect above
+  // and immediately overwrite a freshly-loaded persisted value with "[]".
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    savePersistedCountries(filters.countries);
+  }, [filters.countries]);
 
   const toggleOrg = (o: Org) => {
     const has = filters.org.includes(o);
@@ -84,12 +100,10 @@ export function FilterSidebar({ filters, onChange, countries, homeSet, variant =
 
   const toggleCountry = (c: string) => {
     const has = filters.countries.includes(c);
-    const newCountries = has ? filters.countries.filter((x) => x !== c) : [...filters.countries, c];
     onChange({
       ...filters,
-      countries: newCountries,
+      countries: has ? filters.countries.filter((x) => x !== c) : [...filters.countries, c],
     });
-    savePersistedCountries(newCountries);
   };
 
   const visibleCountries = countries.filter((c) =>
