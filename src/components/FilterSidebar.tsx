@@ -41,6 +41,12 @@ interface Props {
 export function FilterSidebar({ filters, onChange, countries, homeSet, variant = "full" }: Props) {
   const [countryQuery, setCountryQuery] = useState("");
 
+  const isLeapYear = (y: number): boolean => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+
+  // Format a Date as YYYY-MM-DD in local time (matching what <input type="date"> expects)
+  const toLocalDateString = (date: Date): string =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
   const toggleOrg = (o: Org) => {
     const has = filters.org.includes(o);
     onChange({
@@ -161,21 +167,109 @@ export function FilterSidebar({ filters, onChange, countries, homeSet, variant =
             </label>
             <label className="flex items-center justify-between gap-2">
               <span className="text-muted-foreground">From</span>
-              <input
-                type="date"
-                value={filters.from}
-                onChange={(e) => onChange({ ...filters, from: e.target.value })}
-                className="rounded-lg border border-border bg-[var(--surface)] px-2 py-1 outline-none focus:ring-2 focus:ring-[var(--accent)]/40 focus:border-[var(--accent)] transition"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={filters.from}
+                  onChange={(e) => onChange({ ...filters, from: e.target.value })}
+                  className="rounded-lg border border-border bg-[var(--surface)] px-2 py-1 outline-none focus:ring-2 focus:ring-[var(--accent)]/40 focus:border-[var(--accent)] transition"
+                />
+                <button
+                  type="button"
+                  data-testid="year-stepper-minus"
+                  onClick={() => {
+                    const val = filters.from;
+                    if (!val) return;
+                    const [y, m, d] = val.split("-").map(Number);
+                    const date = new Date(y, m - 1, d);
+                    const prevYear = date.getFullYear() - 1;
+                    const newDate = new Date(prevYear, m - 1, d);
+                    if (m === 2 && d === 29 && !isLeapYear(prevYear)) {
+                      onChange({ ...filters, from: `${prevYear}-${String(m).padStart(2, "0")}-${String(28).padStart(2, "0")}` });
+                    } else {
+                      onChange({ ...filters, from: toLocalDateString(newDate) });
+                    }
+                  }}
+                  aria-label="Decrement 'From' year"
+                  className="flex h-7 w-6 items-center justify-center rounded-md text-[10px] font-bold text-foreground/60 hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  data-testid="year-stepper-plus"
+                  onClick={() => {
+                    const val = filters.from;
+                    if (!val) return;
+                    const [y, m, d] = val.split("-").map(Number);
+                    const date = new Date(y, m - 1, d);
+                    const nextYear = date.getFullYear() + 1;
+                    const newDate = new Date(nextYear, m - 1, d);
+                    if (m === 2 && d === 29 && !isLeapYear(nextYear)) {
+                      onChange({ ...filters, from: `${nextYear}-${String(m).padStart(2, "0")}-${String(28).padStart(2, "0")}` });
+                    } else {
+                      onChange({ ...filters, from: toLocalDateString(newDate) });
+                    }
+                  }}
+                  aria-label="Increment 'From' year"
+                  className="flex h-7 w-6 items-center justify-center rounded-md text-[10px] font-bold text-foreground/60 hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                >
+                  +
+                </button>
+              </div>
             </label>
             <label className="flex items-center justify-between gap-2">
               <span className="text-muted-foreground">To</span>
-              <input
-                type="date"
-                value={filters.to}
-                onChange={(e) => onChange({ ...filters, to: e.target.value })}
-                className="rounded-lg border border-border bg-[var(--surface)] px-2 py-1 outline-none focus:ring-2 focus:ring-[var(--accent)]/40 focus:border-[var(--accent)] transition"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={filters.to}
+                  onChange={(e) => onChange({ ...filters, to: e.target.value })}
+                  className="rounded-lg border border-border bg-[var(--surface)] px-2 py-1 outline-none focus:ring-2 focus:ring-[var(--accent)]/40 focus:border-[var(--accent)] transition"
+                />
+                <button
+                  type="button"
+                  data-testid="year-stepper-minus"
+                  onClick={() => {
+                    const val = filters.to;
+                    if (!val) return;
+                    const [y, m, d] = val.split("-").map(Number);
+                    const date = new Date(y, m - 1, d);
+                    const prevYear = date.getFullYear() - 1;
+                    const newDate = new Date(prevYear, m - 1, d);
+                    if (m === 2 && d === 29 && !isLeapYear(prevYear)) {
+                      onChange({ ...filters, to: `${prevYear}-${String(m).padStart(2, "0")}-${String(28).padStart(2, "0")}` });
+                    } else {
+                      onChange({ ...filters, to: toLocalDateString(newDate) });
+                    }
+                  }}
+                  aria-label="Decrement 'To' year"
+                  className="flex h-7 w-6 items-center justify-center rounded-md text-[10px] font-bold text-foreground/60 hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  data-testid="year-stepper-plus"
+                  onClick={() => {
+                    const val = filters.to;
+                    if (!val) return;
+                    const [y, m, d] = val.split("-").map(Number);
+                    const date = new Date(y, m - 1, d);
+                    const nextYear = date.getFullYear() + 1;
+                    const newDate = new Date(nextYear, m - 1, d);
+                    if (m === 2 && d === 29 && !isLeapYear(nextYear)) {
+                      onChange({ ...filters, to: `${nextYear}-${String(m).padStart(2, "0")}-${String(28).padStart(2, "0")}` });
+                    } else {
+                      onChange({ ...filters, to: toLocalDateString(newDate) });
+                    }
+                  }}
+                  aria-label="Increment 'To' year"
+                  className="flex h-7 w-6 items-center justify-center rounded-md text-[10px] font-bold text-foreground/60 hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                >
+                  +
+                </button>
+              </div>
             </label>
           </div>
         </section>

@@ -3,6 +3,7 @@
 import { Fragment } from "react";
 import type { Show, ShowWithDistance } from "@/lib/types";
 import { OrgBadge } from "./OrgBadge";
+import { displayTitle } from "@/lib/display-title";
 
 interface Props {
   shows: ShowWithDistance[];
@@ -95,7 +96,7 @@ export function ShowList({ shows, homeSet, variant = "full", total }: Props) {
                 </td>
                 <td className={`${judges ? "pb-1 pt-2.5" : "py-2.5"} px-3`}>
                   <div className="font-medium text-foreground">
-                    {s.title}
+                    {displayTitle(s)}
                   </div>
                   {s.club && s.club !== s.title && (
                     <div className="text-xs text-muted-foreground mt-0.5">{s.club}</div>
