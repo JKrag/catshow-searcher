@@ -4,6 +4,29 @@ Brief record of significant changes. Newest first. Each entry covers a PR or log
 
 ---
 
+## Filter sidebar: full filter persistence + reset button (#47)
+
+Follow-up to #44/#45 (which only persisted the country list) — now every
+filter field is remembered across navigation and reload.
+
+- **Full-object persistence** (`FilterSidebar.tsx`): `loadPersistedFilters` /
+  `savePersistedFilters` now read/write the whole `Filters` object (org,
+  date range, search, judge, distance, include-past — not just countries).
+- **Per-variant storage keys**: `catz.filters.visitor` and `catz.filters.full`
+  are kept separate, not shared. The visitor (`/`) and exhibitor
+  (`/exhibitor`) routes have different default shapes (different
+  `maxDistanceKm` defaults/ranges, and the visitor variant has no
+  org/search/judge controls at all) — a shared key would let a value set on
+  one route silently filter the other with no visible control explaining why.
+  The old countries-only `catz.countries` key from #44/#45 is superseded, not
+  migrated (shipped same day, negligible population affected).
+- **"Reset filters" button**: new header row above the Organisation section,
+  restores the variant's own defaults (`defaultFilters` /
+  `defaultVisitorFilters`) and persists the reset immediately.
+- **Tests**: extended `filter-sidebar-country.test.tsx` with full round-trip
+  persistence (org + search across remount) and reset-button coverage;
+  updated existing country-persistence tests to the new variant-scoped API.
+
 ## Organizer view: weekend-bucketing rule + review fixes (#39)
 
 Follow-up to #38, addressing Copilot review comments — and pinning down a
