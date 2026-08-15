@@ -42,14 +42,36 @@ interface Props {
   variant?: "visitor" | "full";
 }
 
+function sanitizePersistedFilters(parsed: unknown): Partial<Filters> {
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+  const raw = parsed as Record<string, unknown>;
+  const result: Partial<Filters> = {};
+
+  if (Array.isArray(raw.org)) {
+    const org = raw.org.filter((o): o is Org => o === "FIFe" || o === "TICA");
+    result.org = org;
+  }
+  if (Array.isArray(raw.countries)) {
+    result.countries = raw.countries.filter((c): c is string => typeof c === "string");
+  }
+  if (typeof raw.from === "string") result.from = raw.from;
+  if (typeof raw.to === "string") result.to = raw.to;
+  if (typeof raw.q === "string") result.q = raw.q;
+  if (typeof raw.judgeQ === "string") result.judgeQ = raw.judgeQ;
+  if (typeof raw.maxDistanceKm === "number" || raw.maxDistanceKm === null) {
+    result.maxDistanceKm = raw.maxDistanceKm;
+  }
+  if (typeof raw.includePast === "boolean") result.includePast = raw.includePast;
+
+  return result;
+}
+
 export function loadPersistedFilters(variant: "visitor" | "full"): Partial<Filters> {
   if (typeof window === "undefined") return {};
   try {
     const raw = window.localStorage.getItem(filtersKey(variant));
     if (!raw) return {};
-    const parsed = JSON.parse(raw) as Record<string, unknown> | null;
-    if (!parsed || typeof parsed !== "object") return {};
-    return parsed as Partial<Filters>;
+    return sanitizePersistedFilters(JSON.parse(raw));
   } catch {
     return {};
   }
@@ -90,7 +112,7 @@ export function FilterSidebar({ filters, onChange, countries, homeSet, variant =
       return;
     }
     savePersistedFilters(filters, variant);
-  }, [filters]);
+  }, [filters, variant]);
 
   const toggleOrg = (o: Org) => {
     const has = filters.org.includes(o);
