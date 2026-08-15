@@ -3,7 +3,7 @@ import { useState } from "react";
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { FilterSidebar, defaultFilters, loadPersistedCountries, savePersistedCountries } from "../FilterSidebar";
+import { FilterSidebar, defaultFilters, loadPersistedFilters, savePersistedFilters } from "../FilterSidebar";
 import type { Filters } from "../FilterSidebar";
 
 const COUNTRIES = ["Denmark", "Germany", "Sweden"];
@@ -35,11 +35,11 @@ describe("FilterSidebar country selector persistence", () => {
 
     await user.click(screen.getByRole("checkbox", { name: "Germany" }));
 
-    expect(loadPersistedCountries()).toEqual(["Germany"]);
+    expect(loadPersistedFilters("full").countries).toEqual(["Germany"]);
   });
 
   it("loads persisted countries from localStorage on mount and reports them via onChange", async () => {
-    savePersistedCountries(["Sweden"]);
+    savePersistedFilters({ ...defaultFilters, countries: ["Sweden"] }, "full");
 
     let latest: Filters | null = null;
     render(
@@ -75,12 +75,83 @@ describe("FilterSidebar country selector persistence", () => {
   });
 
   it("removes a country from localStorage when unchecked", async () => {
-    savePersistedCountries(["Germany"]);
+    savePersistedFilters({ ...defaultFilters, countries: ["Germany"] }, "full");
     const user = userEvent.setup();
     render(<Harness initial={makeFilters({ countries: ["Germany"] })} />);
 
     await user.click(screen.getByRole("checkbox", { name: "Germany" }));
 
-    expect(loadPersistedCountries()).toEqual([]);
+    expect(loadPersistedFilters("full").countries).toEqual([]);
+  });
+});
+
+describe("FilterSidebar full-filters persistence", () => {
+  it("persists non-country filter fields (org, dates, search) across remount", async () => {
+    const user = userEvent.setup();
+    const first = render(<Harness initial={makeFilters()} />);
+
+    await user.click(screen.getByRole("button", { name: "TICA" }));
+    await user.type(screen.getByPlaceholderText("Title, club, city, venue…"), "cattery");
+
+    const persisted = loadPersistedFilters("full");
+    expect(persisted.org).not.toContain("TICA");
+    expect(persisted.q).toBe("cattery");
+
+    first.unmount();
+
+    render(<Harness initial={makeFilters()} />);
+    const ticaButton = await screen.findByRole("button", { name: "TICA" });
+    expect(ticaButton).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("Reset filters button restores defaults and clears persisted overrides", async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={makeFilters({ countries: ["Sweden"], q: "x" })} />);
+
+    await user.click(screen.getByRole("button", { name: "Reset filters" }));
+
+    expect(screen.getByPlaceholderText("Title, club, city, venue…")).toHaveValue("");
+    expect(screen.queryByText(/^Clear \(/)).toBeNull();
+    expect(loadPersistedFilters("full").countries).toEqual([]);
+  });
+
+  it("sanitizes malformed or legacy localStorage values instead of applying them raw", async () => {
+    window.localStorage.setItem("catz.filters.full", JSON.stringify(["Sweden", "Denmark"]));
+    let latest: Filters | null = null;
+    render(
+      <FilterSidebar
+        filters={makeFilters()}
+        onChange={(f) => {
+          latest = f;
+        }}
+        countries={COUNTRIES}
+        homeSet={false}
+      />,
+    );
+    // An array at the top level is rejected wholesale — defaults stand.
+    expect(latest).toBeNull();
+
+    window.localStorage.setItem(
+      "catz.filters.full",
+      JSON.stringify({ org: "TICA", countries: ["Sweden", 42, null], maxDistanceKm: "far", includePast: "yes" }),
+    );
+    render(
+      <FilterSidebar
+        filters={makeFilters()}
+        onChange={(f) => {
+          latest = f;
+        }}
+        countries={COUNTRIES}
+        homeSet={false}
+      />,
+    );
+    // Each field is validated independently: a non-array `org` and non-boolean
+    // `includePast`/non-number `maxDistanceKm` are dropped (defaults stand),
+    // while `countries` keeps only its string entries.
+    expect(latest).not.toBeNull();
+    expect(latest!.org).toEqual(defaultFilters.org);
+    expect(latest!.countries).toEqual(["Sweden"]);
+    expect(latest!.maxDistanceKm).toBe(defaultFilters.maxDistanceKm);
+    expect(latest!.includePast).toBe(defaultFilters.includePast);
   });
 });

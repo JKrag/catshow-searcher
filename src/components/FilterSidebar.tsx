@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { Org } from "@/lib/types";
 
-const COUNTRIES_KEY = "catz.countries";
+function filtersKey(variant: "visitor" | "full"): string {
+  return variant === "visitor" ? "catz.filters.visitor" : "catz.filters.full";
+}
 
 export interface Filters {
   org: Org[];
@@ -40,21 +42,44 @@ interface Props {
   variant?: "visitor" | "full";
 }
 
-export function loadPersistedCountries(): string[] {
-  if (typeof window === "undefined") return [];
+function sanitizePersistedFilters(parsed: unknown): Partial<Filters> {
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+  const raw = parsed as Record<string, unknown>;
+  const result: Partial<Filters> = {};
+
+  if (Array.isArray(raw.org)) {
+    const org = raw.org.filter((o): o is Org => o === "FIFe" || o === "TICA");
+    result.org = org;
+  }
+  if (Array.isArray(raw.countries)) {
+    result.countries = raw.countries.filter((c): c is string => typeof c === "string");
+  }
+  if (typeof raw.from === "string") result.from = raw.from;
+  if (typeof raw.to === "string") result.to = raw.to;
+  if (typeof raw.q === "string") result.q = raw.q;
+  if (typeof raw.judgeQ === "string") result.judgeQ = raw.judgeQ;
+  if (typeof raw.maxDistanceKm === "number" || raw.maxDistanceKm === null) {
+    result.maxDistanceKm = raw.maxDistanceKm;
+  }
+  if (typeof raw.includePast === "boolean") result.includePast = raw.includePast;
+
+  return result;
+}
+
+export function loadPersistedFilters(variant: "visitor" | "full"): Partial<Filters> {
+  if (typeof window === "undefined") return {};
   try {
-    const raw = window.localStorage.getItem(COUNTRIES_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as string[];
-    return parsed.filter(Boolean);
+    const raw = window.localStorage.getItem(filtersKey(variant));
+    if (!raw) return {};
+    return sanitizePersistedFilters(JSON.parse(raw));
   } catch {
-    return [];
+    return {};
   }
 }
 
-export function savePersistedCountries(countries: string[]) {
+export function savePersistedFilters(filters: Filters, variant: "visitor" | "full"): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(COUNTRIES_KEY, JSON.stringify(countries));
+  window.localStorage.setItem(filtersKey(variant), JSON.stringify(filters));
 }
 
 export function FilterSidebar({ filters, onChange, countries, homeSet, variant = "full" }: Props) {
@@ -66,29 +91,28 @@ export function FilterSidebar({ filters, onChange, countries, homeSet, variant =
   const toLocalDateString = (date: Date): string =>
     `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
-  // Load persisted countries from localStorage on mount, but never override
-  // an explicit non-empty `filters.countries` a parent already passed in.
+  // Load persisted filters from localStorage on mount and apply them —
+  // both persona routes always mount with a plain hardcoded default, so a
+  // persisted value always wins over that default.
   useEffect(() => {
-    if (filters.countries.length === 0) {
-      const persisted = loadPersistedCountries();
-      if (persisted.length > 0) {
-        onChange({ ...filters, countries: persisted });
-      }
+    const persisted = loadPersistedFilters(variant);
+    if (Object.keys(persisted).length > 0) {
+      onChange({ ...filters, ...persisted });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Persist on every change to filters.countries (toggle, Clear, reset, etc.)
-  // — skip the very first render so this doesn't race the load effect above
-  // and immediately overwrite a freshly-loaded persisted value with "[]".
+  // Persist on every change to filters — skip the very first render so this
+  // doesn't race the load effect above and immediately overwrite a
+  // freshly-loaded persisted value with the mount-time default.
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
-    savePersistedCountries(filters.countries);
-  }, [filters.countries]);
+    savePersistedFilters(filters, variant);
+  }, [filters, variant]);
 
   const toggleOrg = (o: Org) => {
     const has = filters.org.includes(o);
@@ -126,10 +150,22 @@ export function FilterSidebar({ filters, onChange, countries, homeSet, variant =
   const displayCountries = orderedCountries;
 
   const showAll = filters.maxDistanceKm === null;
+  const resetDefaults = variant === "visitor" ? defaultVisitorFilters : defaultFilters;
 
   return (
     <aside className="w-full lg:w-72 lg:sticky lg:top-20 lg:self-start text-sm">
       <div className="rounded-2xl bg-card/80 backdrop-blur ring-1 ring-border shadow-sm divide-y divide-border overflow-hidden">
+        <div className="flex items-center justify-between p-4">
+          <h2 className="font-semibold text-sm text-foreground">Filters</h2>
+          <button
+            type="button"
+            onClick={() => onChange(resetDefaults)}
+            className="text-[11px] text-[var(--primary)] hover:underline"
+          >
+            Reset filters
+          </button>
+        </div>
+
         {variant === "full" && (
           <section className="p-4">
             <h3 className="font-semibold mb-2.5 text-xs uppercase tracking-wider text-muted-foreground">
