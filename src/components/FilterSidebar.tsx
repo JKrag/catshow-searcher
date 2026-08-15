@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Org } from "@/lib/types";
+
+const COUNTRIES_KEY = "catz.countries";
 
 export interface Filters {
   org: Org[];
@@ -38,6 +40,23 @@ interface Props {
   variant?: "visitor" | "full";
 }
 
+export function loadPersistedCountries(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(COUNTRIES_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as string[];
+    return parsed.filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+export function savePersistedCountries(countries: string[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(COUNTRIES_KEY, JSON.stringify(countries));
+}
+
 export function FilterSidebar({ filters, onChange, countries, homeSet, variant = "full" }: Props) {
   const [countryQuery, setCountryQuery] = useState("");
 
@@ -46,6 +65,14 @@ export function FilterSidebar({ filters, onChange, countries, homeSet, variant =
   // Format a Date as YYYY-MM-DD in local time (matching what <input type="date"> expects)
   const toLocalDateString = (date: Date): string =>
     `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+  // Load persisted countries from localStorage on mount
+  useEffect(() => {
+    const persisted = loadPersistedCountries();
+    if (persisted.length > 0) {
+      onChange({ ...filters, countries: persisted });
+    }
+  }, []);
 
   const toggleOrg = (o: Org) => {
     const has = filters.org.includes(o);
@@ -57,15 +84,32 @@ export function FilterSidebar({ filters, onChange, countries, homeSet, variant =
 
   const toggleCountry = (c: string) => {
     const has = filters.countries.includes(c);
+    const newCountries = has ? filters.countries.filter((x) => x !== c) : [...filters.countries, c];
     onChange({
       ...filters,
-      countries: has ? filters.countries.filter((x) => x !== c) : [...filters.countries, c],
+      countries: newCountries,
     });
+    savePersistedCountries(newCountries);
   };
 
   const visibleCountries = countries.filter((c) =>
     c.toLowerCase().includes(countryQuery.toLowerCase()),
   );
+
+  // Pin selected countries to the top of the list
+  const pinnedCountries = new Set(filters.countries);
+  const orderedCountries: string[] = [];
+  for (const c of visibleCountries) {
+    if (pinnedCountries.has(c)) {
+      orderedCountries.push(c);
+    }
+  }
+  for (const c of visibleCountries) {
+    if (!pinnedCountries.has(c)) {
+      orderedCountries.push(c);
+    }
+  }
+  const displayCountries = orderedCountries;
 
   const showAll = filters.maxDistanceKm === null;
 
@@ -297,10 +341,10 @@ export function FilterSidebar({ filters, onChange, countries, homeSet, variant =
             className="mb-2 w-full rounded-lg border border-border bg-[var(--surface)] px-2 py-1.5 outline-none focus:ring-2 focus:ring-[var(--accent)]/40 focus:border-[var(--accent)] transition"
           />
           <div className="thin-scroll max-h-44 overflow-y-auto pr-1 space-y-px rounded-lg bg-[var(--muted-soft)]/50 ring-1 ring-border p-1">
-            {visibleCountries.length === 0 && (
+            {displayCountries.length === 0 && (
               <div className="text-muted-foreground px-2 py-1">No matches</div>
             )}
-            {visibleCountries.map((c) => {
+            {displayCountries.map((c) => {
               const checked = filters.countries.includes(c);
               return (
                 <label
