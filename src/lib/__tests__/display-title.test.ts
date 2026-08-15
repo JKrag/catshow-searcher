@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { displayTitle } from "../display-title";
-import type { BaseShow, FifeShow, TicaShow } from "../types";
+import type { FifeShow, TicaShow } from "../types";
 
 describe("displayTitle", () => {
   it("falls back to City (Country) for a generic-title FIFe show", () => {
@@ -99,6 +99,30 @@ describe("displayTitle", () => {
     expect(displayTitle(show)).toBe("Oslo (Norway)");
   });
 
+  it("falls back to the raw title when no city or country is available", () => {
+    const show: FifeShow = {
+      id: 9,
+      source: "FIFe",
+      source_id: "12351",
+      title: "International show",
+      club: null,
+      country: null,
+      city: null,
+      venue: null,
+      start_date: "2026-08-01",
+      end_date: "2026-08-03",
+      lat: null,
+      lng: null,
+      geo_precision: null,
+      url: null,
+      scraped_at: "2026-05-01T00:00:00Z",
+      detail_fetched: false,
+      show_type: null,
+      website_url: null,
+    };
+    expect(displayTitle(show)).toBe("International show");
+  });
+
   it("passes through a non-generic title unchanged", () => {
     const show: FifeShow = {
       id: 5,
@@ -146,6 +170,31 @@ describe("displayTitle", () => {
       judges: null,
     };
     expect(displayTitle(show)).toBe("California Regional");
+  });
+
+  it("does not apply the fallback to a TICA show even with a generic-looking title", () => {
+    const show: TicaShow = {
+      id: 8,
+      source: "TICA",
+      source_id: "8888",
+      title: "International show",
+      club: "Some Club",
+      country: "United States",
+      city: "Los Angeles",
+      venue: null,
+      start_date: "2026-05-15",
+      end_date: "2026-05-17",
+      lat: null,
+      lng: null,
+      geo_precision: null,
+      url: null,
+      scraped_at: "2026-05-01T00:00:00Z",
+      detail_fetched: false,
+      show_format: null,
+      flyer_url: null,
+      judges: null,
+    };
+    expect(displayTitle(show)).toBe("International show");
   });
 
   it("matches on case-insensitive generic prefix", () => {

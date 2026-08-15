@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { FilterSidebar, defaultFilters } from "../FilterSidebar";
 
 describe("FilterSidebar — year stepper buttons", () => {
@@ -149,7 +149,6 @@ describe("FilterSidebar — year stepper buttons", () => {
 
     const fromLabel = screen.getByText("From");
     const fromContainer = fromLabel.closest("label");
-    const fromInput = fromContainer.querySelector('input[type="date"]');
 
     // Now click the +1yr button on the From field
     const plusButton = fromContainer.querySelector('[data-testid="year-stepper-plus"]');

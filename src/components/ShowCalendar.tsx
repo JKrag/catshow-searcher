@@ -133,7 +133,7 @@ export function ShowCalendar({ shows }: Props) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block truncate text-[11px] leading-tight px-1.5 py-0.5 rounded hover:opacity-80 transition border-l-2"
-                    title={`${s.title} — ${s.city ?? ""}, ${s.country ?? ""}`}
+                    title={`${displayTitle(s)} — ${s.city ?? ""}, ${s.country ?? ""}`}
                     style={{
                       backgroundColor:
                         s.source === "FIFe"
