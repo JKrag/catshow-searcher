@@ -52,13 +52,8 @@ export default function VisitorPage() {
   }, [annotated, filters.maxDistanceKm, home]);
 
   const sorted = useMemo(() => {
-    if (!home || !filters.maxDistanceKm) {
-      return [...visible].sort((a, b) => a.start_date.localeCompare(b.start_date));
-    }
-    return [...visible].sort(
-      (a, b) => (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity),
-    );
-  }, [visible, home, filters.maxDistanceKm]);
+    return [...visible].sort((a, b) => a.start_date.localeCompare(b.start_date));
+  }, [visible]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -154,7 +149,7 @@ export default function VisitorPage() {
             />
           )}
           {view === "list" && (
-            <ShowList shows={sorted} homeSet={!!home} variant="visitor" total={annotated.length} />
+            <ShowList shows={visible} homeSet={!!home} variant="visitor" total={annotated.length} />
           )}
           {view === "calendar" && <ShowCalendar shows={sorted} />}
         </section>
